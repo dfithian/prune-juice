@@ -1,0 +1,73 @@
+name: prune-juice
+
+version: '0.1'
+maintainer: Dan Fithian
+license: AllRightsReserved
+copyright: 2020 Dan Fithian
+
+ghc-options:
+  - -Wall
+  - -Werror
+  - -fwarn-tabs
+  - -fwarn-redundant-constraints
+  - -Wincomplete-uni-patterns
+  - -eventlog
+  - -O0
+
+default-extensions:
+  - ConstraintKinds
+  - DataKinds
+  - DefaultSignatures
+  - DeriveDataTypeable
+  - DeriveGeneric
+  - DerivingStrategies
+  - DerivingVia
+  - EmptyDataDecls
+  - FlexibleContexts
+  - FlexibleInstances
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - LambdaCase
+  - MultiParamTypeClasses
+  - MultiWayIf
+  - NamedFieldPuns
+  - NoImplicitPrelude
+  - NoMonomorphismRestriction
+  - OverloadedStrings
+  - QuasiQuotes
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TemplateHaskell
+  - TupleSections
+  - TypeApplications
+  - TypeFamilies
+  - TypeOperators
+  - ViewPatterns
+
+dependencies:
+  - aeson
+  - base
+  - bytestring
+  - containers
+  - directory
+  - filepath
+  - hpack
+  - text
+  - yaml
+
+library:
+  source-dirs:
+    - src
+
+tests:
+  test:
+    main: main.hs
+    source-dirs:
+      - test
+    dependencies:
+      - file-path-th
+      - hspec
+
+      - prune-juice
