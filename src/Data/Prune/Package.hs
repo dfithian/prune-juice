@@ -1,4 +1,4 @@
-module Data.Prune.Internal where
+module Data.Prune.Package where
 
 import Prelude
 

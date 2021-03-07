@@ -19,6 +19,9 @@ newtype CompilableName = CompilableName { unCompilableName :: Text }
 data DependencyName = DependencyName { unDependencyName :: Text }
   deriving (Eq, Ord, Show)
 
+data ModuleName = ModuleName { unModuleName :: Text }
+  deriving (Eq, Ord, Show)
+
 data Compilable = Compilable
   { compilableName :: CompilableName
   , compilableType :: CompilableType

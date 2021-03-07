@@ -54,6 +54,8 @@ dependencies:
   - directory
   - filepath
   - hpack
+  - megaparsec
+  - mtl
   - text
   - yaml
 

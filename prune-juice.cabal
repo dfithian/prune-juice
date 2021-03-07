@@ -4,19 +4,21 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4d63c62239487b42b9f53e75efb9c73a5c9dcd88f52fcb3dd25490eded0087d1
+-- hash: 3541177807f2120d906b0c5b3012438770e45ea3ea4aa77ee819de82dd7a8340
 
 name:           prune-juice
 version:        0.1
 maintainer:     Dan Fithian
 copyright:      2020 Dan Fithian
 license:        AllRightsReserved
+license-file:   LICENSE
 build-type:     Simple
 
 library
   exposed-modules:
-      Data.Prune
-      Data.Prune.Internal
+      Data.Prune.Dependency
+      Data.Prune.ImportParser
+      Data.Prune.Package
       Data.Prune.Types
   other-modules:
       Paths_prune_juice
@@ -32,6 +34,8 @@ library
     , directory
     , filepath
     , hpack
+    , megaparsec
+    , mtl
     , text
     , yaml
   default-language: Haskell2010
@@ -52,6 +56,8 @@ executable prune-juice
     , directory
     , filepath
     , hpack
+    , megaparsec
+    , mtl
     , optparse-applicative
     , prune-juice
     , text
@@ -62,7 +68,8 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: main.hs
   other-modules:
-      Data.Prune.InternalSpec
+      Data.Prune.ImportParserSpec
+      Data.Prune.PackageSpec
       Paths_prune_juice
   hs-source-dirs:
       test
@@ -78,6 +85,8 @@ test-suite test
     , filepath
     , hpack
     , hspec
+    , megaparsec
+    , mtl
     , prune-juice
     , text
     , yaml

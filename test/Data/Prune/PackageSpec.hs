@@ -1,4 +1,4 @@
-module Data.Prune.InternalSpec where
+module Data.Prune.PackageSpec where
 
 import Prelude
 
@@ -11,10 +11,10 @@ import qualified Data.Set as Set
 import qualified Data.Prune.Types as T
 
 -- the module being tested
-import Data.Prune.Internal
+import Data.Prune.Package
 
 spec :: Spec
-spec = describe "Data.Prune.Internal" $ do
+spec = describe "Data.Prune.Package" $ do
   let stackYamlFile = $(fileRelativeToAbsolute "../../../stack.yaml")
   it "parses stack.yaml" $ do
     [T.Package {..}] <- parseStackYaml stackYamlFile
@@ -23,4 +23,4 @@ spec = describe "Data.Prune.Internal" $ do
     T.Compilable {..} <- maybe (fail "No compilable with the name \"test\"") pure $ find ((==) (T.CompilableName "test") . T.compilableName) packageCompilables
     compilableType `shouldBe` T.CompilableTypeTest
     compilableDependencies `shouldSatisfy` not . Set.null
-    compilableFiles `shouldSatisfy` not . Set.null . Set.filter (isSuffixOf "InternalSpec.hs")
+    compilableFiles `shouldSatisfy` not . Set.null . Set.filter (isSuffixOf "PackageSpec.hs")
