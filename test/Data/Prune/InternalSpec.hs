@@ -15,9 +15,9 @@ import Data.Prune.Internal
 
 spec :: Spec
 spec = describe "Data.Prune.Internal" $ do
-  let dir = $(fileRelativeToAbsolute "../../../")
+  let stackYamlFile = $(fileRelativeToAbsolute "../../../stack.yaml")
   it "parses stack.yaml" $ do
-    [T.Package {..}] <- parseStackYaml dir
+    [T.Package {..}] <- parseStackYaml stackYamlFile
     packageName `shouldBe` "prune-juice"
     packageBaseDependencies `shouldSatisfy` Set.member (T.DependencyName "base")
     T.Compilable {..} <- maybe (fail "No compilable with the name \"test\"") pure $ find ((==) (T.CompilableName "test") . T.compilableName) packageCompilables

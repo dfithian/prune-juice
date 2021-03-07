@@ -71,3 +71,13 @@ tests:
       - hspec
 
       - prune-juice
+
+executables:
+  prune-juice:
+    main: main.hs
+    source-dirs:
+      - app
+    dependencies:
+      - optparse-applicative
+
+      - prune-juice

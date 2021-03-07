@@ -66,5 +66,5 @@ parsePackageYaml fp = do
 
 parseStackYaml :: FilePath -> IO [T.Package]
 parseStackYaml fp = do
-  T.StackYaml {..} <- either (fail . ("Couldn't parse stack.yaml due to " <>) . show) pure . Yaml.decodeEither' =<< BS.readFile (fp </> "stack.yaml")
+  T.StackYaml {..} <- either (fail . ("Couldn't parse stack.yaml due to " <>) . show) pure . Yaml.decodeEither' =<< BS.readFile fp
   traverse parsePackageYaml stackYamlPackages
