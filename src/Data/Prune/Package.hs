@@ -58,10 +58,20 @@ parsePackageYaml fp = do
   executables <- getSectionCompilables fp T.CompilableTypeExecutable $ packageExecutables package
   tests       <- getSectionCompilables fp T.CompilableTypeTest       $ packageTests package
   benchmarks  <- getSectionCompilables fp T.CompilableTypeBenchmark  $ packageBenchmarks package
-  pure T.Package
+  pure . scrubPackage $ T.Package
     { packageName = pack $ packageName package
     , packageBaseDependencies = baseDependencies
     , packageCompilables = libraries <> executables <> tests <> benchmarks
+    }
+
+scrubPackage :: T.Package -> T.Package
+scrubPackage package@T.Package {..} =
+  let localDependencyNames = Set.fromList $ T.DependencyName . T.unCompilableName . T.compilableName <$> T.packageCompilables package
+  in package
+    { T.packageBaseDependencies = Set.difference packageBaseDependencies localDependencyNames
+    , T.packageCompilables = flip map packageCompilables $ \compilable@T.Compilable {..} -> compilable
+        { T.compilableDependencies = Set.difference compilableDependencies localDependencyNames
+        }
     }
 
 parseStackYaml :: FilePath -> IO [T.Package]

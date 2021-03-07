@@ -24,3 +24,21 @@ spec = describe "Data.Prune.Package" $ do
     compilableType `shouldBe` T.CompilableTypeTest
     compilableDependencies `shouldSatisfy` not . Set.null
     compilableFiles `shouldSatisfy` not . Set.null . Set.filter (isSuffixOf "PackageSpec.hs")
+
+  it "scrubs local dependencies" $ do
+    let compilable = T.Compilable
+          { compilableName = T.CompilableName "foo"
+          , compilableType = T.CompilableTypeLibrary
+          , compilableDependencies = Set.fromList [T.DependencyName "foo", T.DependencyName "baz"]
+          , compilableFiles = mempty
+          }
+        package = T.Package
+          { packageName = "foo"
+          , packageBaseDependencies = Set.fromList [T.DependencyName "foo", T.DependencyName "bar"]
+          , packageCompilables = [ compilable ]
+          }
+        expected = package
+          { T.packageBaseDependencies = Set.fromList [T.DependencyName "bar"]
+          , T.packageCompilables = [ compilable { T.compilableDependencies = Set.fromList [T.DependencyName "baz"] } ]
+          }
+    scrubPackage package `shouldBe` expected
