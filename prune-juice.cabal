@@ -4,13 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ed0913fd896841549d950ec8ce70007208d1024040fef2b42242c0d684c1cfdf
+-- hash: c82d607d1298918a330352ff35cee89ea7edd8f5b4321866f33d55b7558eb1c7
 
 name:           prune-juice
 version:        0.1
+synopsis:       Prune unused Haskell dependencies
+description:    Prune unused Haskell dependencies from a Stack/Hpack project
+category:       Development
 maintainer:     Dan Fithian
 copyright:      2020 Dan Fithian
-license:        AllRightsReserved
+license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 
@@ -25,10 +28,10 @@ library
   hs-source-dirs:
       src
   default-extensions: ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveGeneric DerivingStrategies DerivingVia EmptyDataDecls FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude NoMonomorphismRestriction OverloadedStrings QuasiQuotes RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
-  ghc-options: -Wall -Werror -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog -O0
+  ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
       aeson
-    , base
+    , base <5.0
     , bytestring
     , containers
     , directory
@@ -48,10 +51,10 @@ executable prune-juice
   hs-source-dirs:
       app
   default-extensions: ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveGeneric DerivingStrategies DerivingVia EmptyDataDecls FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude NoMonomorphismRestriction OverloadedStrings QuasiQuotes RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
-  ghc-options: -Wall -Werror -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog -O0
+  ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
       aeson
-    , base
+    , base <5.0
     , bytestring
     , containers
     , directory
@@ -76,10 +79,10 @@ test-suite test
   hs-source-dirs:
       test
   default-extensions: ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveGeneric DerivingStrategies DerivingVia EmptyDataDecls FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude NoMonomorphismRestriction OverloadedStrings QuasiQuotes RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
-  ghc-options: -Wall -Werror -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog -O0
+  ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
       aeson
-    , base
+    , base <5.0
     , bytestring
     , containers
     , directory

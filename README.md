@@ -32,5 +32,4 @@ It's pretty slow, especially for big projects.
 
 ## Testing and Availability
 
-* Get it on Hackage
 * Get it on Stackage

@@ -2,17 +2,18 @@ name: prune-juice
 
 version: '0.1'
 maintainer: Dan Fithian
-license: AllRightsReserved
+license: MIT
 copyright: 2020 Dan Fithian
+category: Development
+synopsis: 'Prune unused Haskell dependencies'
+description: 'Prune unused Haskell dependencies from a Stack/Hpack project'
 
 ghc-options:
   - -Wall
-  - -Werror
   - -fwarn-tabs
   - -fwarn-redundant-constraints
   - -Wincomplete-uni-patterns
   - -eventlog
-  - -O0
 
 default-extensions:
   - ConstraintKinds
@@ -48,7 +49,7 @@ default-extensions:
 
 dependencies:
   - aeson
-  - base
+  - base < 5.0
   - bytestring
   - containers
   - directory
