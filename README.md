@@ -9,5 +9,5 @@ imported by a source file.
 
 ```bash
 stack install
-prune-juice
+prune-juice --help
 ```

@@ -1,10 +1,11 @@
 import Prelude
 
+import Control.Applicative (many)
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (execStateT, put)
 import Data.Foldable (for_, traverse_)
-import Data.Text (pack, unpack)
+import Data.Text (Text, pack, unpack)
 import Data.Traversable (for)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import qualified Data.Set as Set
@@ -17,6 +18,7 @@ import qualified Data.Prune.Types as T
 
 data Opts = Opts
   { optsStackYamlFile :: FilePath
+  , optsPackages :: [Text]
   }
 
 parseArgs :: IO Opts
@@ -29,11 +31,15 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
           <> Opt.help "Location of stack.yaml"
           <> Opt.value "stack.yaml"
           <> Opt.showDefault )
+      <*> many ( pack <$> Opt.strOption (
+        Opt.long "package"
+          <> Opt.metavar "PACKAGE"
+          <> Opt.help "Package name" ) )
 
 main :: IO ()
 main = do
   Opts {..} <- parseArgs
-  packages <- parseStackYaml optsStackYamlFile
+  packages <- parseStackYaml optsStackYamlFile optsPackages
 
   -- FIXME include local dependencies eventually
   code <- flip execStateT ExitSuccess $ for_ packages $ \package@T.Package {..} -> do

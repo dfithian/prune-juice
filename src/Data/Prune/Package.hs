@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Map (Map)
 import Data.Set (Set)
-import Data.Text (pack)
+import Data.Text (Text, pack)
 import Data.Traversable (for)
 import Hpack.Config
   ( Section, decodeOptionsTarget, decodeResultPackage, defaultDecodeOptions, packageBenchmarks
@@ -59,23 +59,31 @@ parsePackageYaml fp = do
   executables       <- getSectionCompilables fp T.CompilableTypeExecutable baseDependencies $ packageExecutables package
   tests             <- getSectionCompilables fp T.CompilableTypeTest       baseDependencies $ packageTests package
   benchmarks        <- getSectionCompilables fp T.CompilableTypeBenchmark  baseDependencies $ packageBenchmarks package
-  pure . scrubPackage $ T.Package
+  pure T.Package
     { packageName = pack $ packageName package
     , packageBaseDependencies = baseDependencies
     , packageCompilables = libraries <> internalLibraries <> executables <> tests <> benchmarks
     }
 
-scrubPackage :: T.Package -> T.Package
-scrubPackage package@T.Package {..} =
-  let localDependencyNames = Set.fromList $ T.DependencyName . T.unCompilableName . T.compilableName <$> T.packageCompilables package
-  in package
+scrubPackage :: Set T.DependencyName -> T.Package -> T.Package
+scrubPackage localDependencyNames package@T.Package {..} =
+  package
     { T.packageBaseDependencies = Set.difference packageBaseDependencies localDependencyNames
     , T.packageCompilables = flip map packageCompilables $ \compilable@T.Compilable {..} -> compilable
         { T.compilableDependencies = Set.difference compilableDependencies localDependencyNames
         }
     }
 
-parseStackYaml :: FilePath -> IO [T.Package]
-parseStackYaml fp = do
-  T.StackYaml {..} <- either (fail . ("Couldn't parse stack.yaml due to " <>) . show) pure . Yaml.decodeEither' =<< BS.readFile fp
-  traverse parsePackageYaml stackYamlPackages
+-- FIXME remove internal libraries too
+scrubPackages :: [T.Package] -> [T.Package]
+scrubPackages packages =
+  let localDependencyNames = Set.fromList $ T.DependencyName . T.packageName <$> packages
+  in scrubPackage localDependencyNames <$> packages
+
+parseStackYaml :: FilePath -> [Text] -> IO [T.Package]
+parseStackYaml stackYamlFile packages = do
+  T.StackYaml {..} <- either (fail . ("Couldn't parse stack.yaml due to " <>) . show) pure . Yaml.decodeEither' =<< BS.readFile stackYamlFile
+  rawPackages <- scrubPackages <$> traverse parsePackageYaml stackYamlPackages
+  if null packages
+    then pure rawPackages
+    else pure $ filter (flip elem packages . T.packageName) rawPackages
