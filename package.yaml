@@ -1,12 +1,13 @@
 name: prune-juice
 
 version: '0.3'
-maintainer: Dan Fithian
+maintainer: Dan Fithian <daniel.m.fithian@gmail.com>
 license: MIT
 copyright: 2020 Dan Fithian
 category: Development
 synopsis: 'Prune unused Haskell dependencies'
-description: 'Prune unused Haskell dependencies from a Stack/Hpack project'
+description: 'Prune unused Haskell dependencies from a Stack and Hpack project - see README at <https://github.com/dfithian/prune-juice#readme>'
+github: dfithian/prune-juice
 
 ghc-options:
   - -Wall
