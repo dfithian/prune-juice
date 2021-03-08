@@ -1,6 +1,6 @@
 name: prune-juice
 
-version: '0.2'
+version: '0.3'
 maintainer: Dan Fithian
 license: MIT
 copyright: 2020 Dan Fithian
@@ -60,6 +60,10 @@ dependencies:
   - text
   - turtle
   - yaml
+
+extra-source-files:
+  - stack.yaml
+  - package.yaml
 
 library:
   source-dirs:
