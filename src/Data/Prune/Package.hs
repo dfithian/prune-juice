@@ -7,10 +7,9 @@ import Data.Set (Set)
 import Data.Text (Text, pack)
 import Data.Traversable (for)
 import Hpack.Config
-  ( Executable, Section, decodeOptionsTarget, decodeResultPackage, defaultDecodeOptions
-  , executableMain, packageBenchmarks, packageConfig, packageExecutables, packageInternalLibraries
-  , packageLibrary, packageName, packageTests, readPackageConfig, sectionData, sectionDependencies
-  , sectionSourceDirs, unDependencies
+  ( Section, decodeOptionsTarget, decodeResultPackage, defaultDecodeOptions, packageBenchmarks
+  , packageConfig, packageExecutables, packageInternalLibraries, packageLibrary, packageName
+  , packageTests, readPackageConfig, sectionDependencies, sectionSourceDirs, unDependencies
   )
 import System.Directory (doesDirectoryExist, listDirectory, pathIsSymbolicLink)
 import System.FilePath.Posix ((</>), isExtensionOf)
@@ -45,30 +44,20 @@ getSectionFiles fp section = fmap mconcat . for (sectionSourceDirs section) $ \d
   allFiles <- listFilesRecursive $ fp </> dir
   pure $ Set.filter (isExtensionOf "hs") allFiles
 
-getExecutableFiles :: FilePath -> Section Executable -> IO (Set FilePath)
-getExecutableFiles fp section = do
-  srcFiles <- getSectionFiles fp section
-  pure $ srcFiles <> maybe mempty Set.singleton (executableMain (sectionData section))
-
 getSectionCompilables :: FilePath -> T.CompilableType -> Set T.DependencyName -> Map String (Section a) -> IO [T.Compilable]
 getSectionCompilables fp typ baseDependencies sections = for (Map.toList sections) $ \(name, section) -> do
   sourceFiles <- getSectionFiles fp section
-  pure $ T.Compilable (T.CompilableName (pack name)) typ (Set.difference (getSectionDependencyNames section) baseDependencies) sourceFiles
-
-getExecutableCompilables :: FilePath -> T.CompilableType -> Set T.DependencyName -> Map String (Section Executable) -> IO [T.Compilable]
-getExecutableCompilables fp typ baseDependencies sections = for (Map.toList sections) $ \(name, section) -> do
-  sourceFiles <- getExecutableFiles fp section
   pure $ T.Compilable (T.CompilableName (pack name)) typ (Set.difference (getSectionDependencyNames section) baseDependencies) sourceFiles
 
 parsePackageYaml :: FilePath -> IO T.Package
 parsePackageYaml fp = do
   package <- either fail (pure . decodeResultPackage) =<< readPackageConfig (defaultDecodeOptions { decodeOptionsTarget = fp </> packageConfig })
   let baseDependencies = maybe mempty getSectionDependencyNames $ packageLibrary package
-  libraries         <- getSectionCompilables    fp T.CompilableTypeLibrary    baseDependencies $ maybe mempty (Map.singleton (packageName package)) $ packageLibrary package
-  internalLibraries <- getSectionCompilables    fp T.CompilableTypeLibrary    baseDependencies $ packageInternalLibraries package
-  executables       <- getExecutableCompilables fp T.CompilableTypeExecutable baseDependencies $ packageExecutables package
-  tests             <- getExecutableCompilables fp T.CompilableTypeTest       baseDependencies $ packageTests package
-  benchmarks        <- getExecutableCompilables fp T.CompilableTypeBenchmark  baseDependencies $ packageBenchmarks package
+  libraries         <- getSectionCompilables fp T.CompilableTypeLibrary    baseDependencies $ maybe mempty (Map.singleton (packageName package)) $ packageLibrary package
+  internalLibraries <- getSectionCompilables fp T.CompilableTypeLibrary    baseDependencies $ packageInternalLibraries package
+  executables       <- getSectionCompilables fp T.CompilableTypeExecutable baseDependencies $ packageExecutables package
+  tests             <- getSectionCompilables fp T.CompilableTypeTest       baseDependencies $ packageTests package
+  benchmarks        <- getSectionCompilables fp T.CompilableTypeBenchmark  baseDependencies $ packageBenchmarks package
   pure T.Package
     { packageName = pack $ packageName package
     , packageBaseDependencies = baseDependencies
