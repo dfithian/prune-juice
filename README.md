@@ -21,3 +21,8 @@ Available options:
                            Location of stack.yaml (default: "stack.yaml")
   --package PACKAGE        Package name(s)
 ```
+
+## Notes
+
+In order for `prune-juice` to correctly detect local dependency usage, you must have run `stack build` (or other
+`ghc-pkg` registration mechanism). `prune-juice` does not do this for you.
