@@ -1,3 +1,4 @@
+-- |Load dependencies for a project using `ghc-pkg`.
 module Data.Prune.Dependency where
 
 import Prelude hiding (words)
@@ -15,11 +16,14 @@ import qualified Data.Set as Set
 import Data.Prune.ImportParser (parseExposedModules)
 import qualified Data.Prune.Types as T
 
+-- |Run a shell command or exit if it fails.
 runOrFail :: Text -> IO Text
 runOrFail cmd = shellStrict cmd mempty >>= \case
   (ExitSuccess, out) -> pure out
   (ExitFailure _, out) -> fail . unpack $ "Failed to \"" <> cmd <> "\" due to " <> out
 
+-- |For the dependencies listed in the specified packages, load `ghc-pkg` and inspect the `exposed-modules` field.
+-- Return a map of module to dependency name.
 getDependencyByModule :: FilePath -> [T.Package] -> IO (Map T.ModuleName T.DependencyName)
 getDependencyByModule stackYamlFile packages = do
   let allDependencies = foldMap T.packageBaseDependencies packages <> foldMap T.compilableDependencies (foldMap T.packageCompilables packages)

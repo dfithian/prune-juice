@@ -1,3 +1,4 @@
+-- |Utilities for package.yaml parsing.
 module Data.Prune.Package where
 
 import Prelude
@@ -20,6 +21,7 @@ import qualified Data.Yaml as Yaml
 
 import qualified Data.Prune.Types as T
 
+-- |Recursively list files in a directory, ignoring symlinks.
 listFilesRecursive :: FilePath -> IO (Set FilePath)
 listFilesRecursive dir = do
   dirs <- listDirectory dir
@@ -36,19 +38,23 @@ listFilesRecursive dir = do
         (_, True) -> listFilesRecursive path
         _ -> pure $ Set.singleton path
 
+-- |Get the dependencies for a thing to compile.
 getSectionDependencyNames :: Section a -> Set T.DependencyName
 getSectionDependencyNames = Set.fromList . map (T.DependencyName . pack) . Map.keys . unDependencies . sectionDependencies
 
+-- |Get the Haskell source files to compile.
 getSectionFiles :: FilePath -> Section a -> IO (Set FilePath)
 getSectionFiles fp section = fmap mconcat . for (sectionSourceDirs section) $ \dir -> do
   allFiles <- listFilesRecursive $ fp </> dir
   pure $ Set.filter (isExtensionOf "hs") allFiles
 
+-- |Parse a thing to compile.
 getSectionCompilables :: FilePath -> T.CompilableType -> Set T.DependencyName -> Map String (Section a) -> IO [T.Compilable]
 getSectionCompilables fp typ baseDependencies sections = for (Map.toList sections) $ \(name, section) -> do
   sourceFiles <- getSectionFiles fp section
   pure $ T.Compilable (T.CompilableName (pack name)) typ (Set.difference (getSectionDependencyNames section) baseDependencies) sourceFiles
 
+-- |Parse a single package.yaml file.
 parsePackageYaml :: FilePath -> IO T.Package
 parsePackageYaml fp = do
   package <- either fail (pure . decodeResultPackage) =<< readPackageConfig (defaultDecodeOptions { decodeOptionsTarget = fp </> packageConfig })
@@ -64,6 +70,7 @@ parsePackageYaml fp = do
     , packageCompilables = libraries <> internalLibraries <> executables <> tests <> benchmarks
     }
 
+-- |Parse stack.yaml by file path, filter by explicit package names (if provided), and return the parsed packages.
 parseStackYaml :: FilePath -> [Text] -> IO [T.Package]
 parseStackYaml stackYamlFile packages = do
   T.StackYaml {..} <- either (fail . ("Couldn't parse stack.yaml due to " <>) . show) pure . Yaml.decodeEither' =<< BS.readFile stackYamlFile

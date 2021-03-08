@@ -1,3 +1,4 @@
+-- |Utilities for parsing imports from Haskell source files.
 module Data.Prune.ImportParser where
 
 import Prelude
@@ -50,22 +51,27 @@ exposedModules :: Parser (Set T.ModuleName)
 exposedModules = void (string "exposed-modules:") *> space
   *> (Set.fromList <$> some (T.ModuleName . pack <$> symbol))
 
+-- |Parse a Haskell source file's imports.
 parseFileImports :: FilePath -> IO (Set T.ModuleName)
 parseFileImports fp = do
   either (fail . ("Failed to parse imports due to " <>) . show) (pure . Set.fromList) . traverse (parse oneImport fp) . filter (isPrefixOf "import ") . lines
     =<< readFile fp
 
+-- |Parse exposed modules from the `ghc-pkg` field description.
 parseExposedModules :: String -> IO (Set T.ModuleName)
 parseExposedModules input =
   if null input
     then pure mempty
     else either (\e -> fail $ "Failed to parse exposed modules due to " <> show e <> " original input " <> input) pure $ parse exposedModules "" input
 
+-- |Get the dependencies used by a list of modules imported by a Haskell source file.
 getUsedDependencies :: Map T.ModuleName T.DependencyName -> Set T.ModuleName -> Set T.DependencyName
 getUsedDependencies dependencyByModule = foldr go mempty . Set.toList
   where
     go next acc = acc <> maybe mempty Set.singleton (Map.lookup next dependencyByModule)
 
+-- |Get the dependencies used by a thing to compile by (1) parsing each source file's imports, (2) getting the
+-- dependencies each of those files use, and (3) smooshing all the dependencies together to return.
 getCompilableUsedDependencies :: Map T.ModuleName T.DependencyName -> T.Compilable -> IO (Set T.DependencyName)
 getCompilableUsedDependencies dependencyByModule T.Compilable {..} = fmap mconcat . for (Set.toList compilableFiles) $ \fp -> do
   moduleNames <- parseFileImports fp
