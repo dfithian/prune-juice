@@ -45,23 +45,24 @@ getSectionFiles fp section = fmap mconcat . for (sectionSourceDirs section) $ \d
   allFiles <- listFilesRecursive $ fp </> dir
   pure $ Set.filter (isExtensionOf "hs") allFiles
 
-getSectionCompilables :: FilePath -> T.CompilableType -> Map String (Section a) -> IO [T.Compilable]
-getSectionCompilables fp typ sections = for (Map.toList sections) $ \(name, section) -> do
+getSectionCompilables :: FilePath -> T.CompilableType -> Set T.DependencyName -> Map String (Section a) -> IO [T.Compilable]
+getSectionCompilables fp typ baseDependencies sections = for (Map.toList sections) $ \(name, section) -> do
   sourceFiles <- getSectionFiles fp section
-  pure $ T.Compilable (T.CompilableName (pack name)) typ (getSectionDependencyNames section) sourceFiles
+  pure $ T.Compilable (T.CompilableName (pack name)) typ (Set.difference (getSectionDependencyNames section) baseDependencies) sourceFiles
 
 parsePackageYaml :: FilePath -> IO T.Package
 parsePackageYaml fp = do
   package <- either fail (pure . decodeResultPackage) =<< readPackageConfig (defaultDecodeOptions { decodeOptionsTarget = fp </> packageConfig })
   let baseDependencies = maybe mempty getSectionDependencyNames $ packageLibrary package
-  libraries   <- getSectionCompilables fp T.CompilableTypeLibrary    $ packageInternalLibraries package
-  executables <- getSectionCompilables fp T.CompilableTypeExecutable $ packageExecutables package
-  tests       <- getSectionCompilables fp T.CompilableTypeTest       $ packageTests package
-  benchmarks  <- getSectionCompilables fp T.CompilableTypeBenchmark  $ packageBenchmarks package
+  libraries         <- getSectionCompilables fp T.CompilableTypeLibrary    baseDependencies $ maybe mempty (Map.singleton (packageName package)) $ packageLibrary package
+  internalLibraries <- getSectionCompilables fp T.CompilableTypeLibrary    baseDependencies $ packageInternalLibraries package
+  executables       <- getSectionCompilables fp T.CompilableTypeExecutable baseDependencies $ packageExecutables package
+  tests             <- getSectionCompilables fp T.CompilableTypeTest       baseDependencies $ packageTests package
+  benchmarks        <- getSectionCompilables fp T.CompilableTypeBenchmark  baseDependencies $ packageBenchmarks package
   pure . scrubPackage $ T.Package
     { packageName = pack $ packageName package
     , packageBaseDependencies = baseDependencies
-    , packageCompilables = libraries <> executables <> tests <> benchmarks
+    , packageCompilables = libraries <> internalLibraries <> executables <> tests <> benchmarks
     }
 
 scrubPackage :: T.Package -> T.Package

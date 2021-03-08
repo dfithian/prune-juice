@@ -46,10 +46,17 @@ oneImport = void (string "import") *> space
   *> optional (void (padded (quoted pkgName)) *> space)
   *> (T.ModuleName . pack <$> (symbol <* space))
 
+exposedModules :: Parser (Set T.ModuleName)
+exposedModules = void (string "exposed-modules:") *> space
+  *> (Set.fromList <$> some (T.ModuleName . pack <$> symbol))
+
 parseFileImports :: FilePath -> IO (Set T.ModuleName)
 parseFileImports fp = do
   either (fail . ("Failed to parse imports due to " <>) . show) (pure . Set.fromList) . traverse (parse oneImport fp) . filter (isPrefixOf "import ") . lines
     =<< readFile fp
+
+parseExposedModules :: String -> IO (Set T.ModuleName)
+parseExposedModules = either (fail . ("Failed to parse exposed modules due to " <>) . show) pure . parse exposedModules ""
 
 getUsedDependencies :: Map T.ModuleName T.DependencyName -> Set T.ModuleName -> Set T.DependencyName
 getUsedDependencies dependencyByModule = foldr go mempty . Set.toList
