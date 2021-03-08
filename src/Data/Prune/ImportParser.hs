@@ -56,7 +56,10 @@ parseFileImports fp = do
     =<< readFile fp
 
 parseExposedModules :: String -> IO (Set T.ModuleName)
-parseExposedModules = either (fail . ("Failed to parse exposed modules due to " <>) . show) pure . parse exposedModules ""
+parseExposedModules input =
+  if null input
+    then pure mempty
+    else either (\e -> fail $ "Failed to parse exposed modules due to " <> show e <> " original input " <> input) pure $ parse exposedModules "" input
 
 getUsedDependencies :: Map T.ModuleName T.DependencyName -> Set T.ModuleName -> Set T.DependencyName
 getUsedDependencies dependencyByModule = foldr go mempty . Set.toList

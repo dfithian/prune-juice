@@ -11,7 +11,14 @@ data CompilableType
   | CompilableTypeExecutable
   | CompilableTypeTest
   | CompilableTypeBenchmark
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Show CompilableType where
+  show = \case
+    CompilableTypeLibrary -> "library"
+    CompilableTypeExecutable -> "executable"
+    CompilableTypeTest -> "test"
+    CompilableTypeBenchmark -> "benchmark"
 
 newtype CompilableName = CompilableName { unCompilableName :: Text }
   deriving (Eq, Ord, Show)

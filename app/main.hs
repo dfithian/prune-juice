@@ -4,7 +4,7 @@ import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (execStateT, put)
 import Data.Foldable (for_, traverse_)
-import Data.Text (unpack)
+import Data.Text (pack, unpack)
 import Data.Traversable (for)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import qualified Data.Set as Set
@@ -43,7 +43,7 @@ main = do
       let (baseUsedDependencies, otherUsedDependencies) = Set.partition (flip Set.member packageBaseDependencies) usedDependencies
           otherUnusedDependencies = Set.difference compilableDependencies otherUsedDependencies
       unless (Set.null otherUnusedDependencies) $ do
-        liftIO . putStrLn . unpack $ "Some unused dependencies for " <> T.unCompilableName compilableName <> " in package " <> packageName
+        liftIO . putStrLn . unpack $ "Some unused dependencies for " <> pack (show compilableType) <> " " <> T.unCompilableName compilableName <> " in package " <> packageName
         traverse_ (liftIO . putStrLn . unpack . ("  " <>) . T.unDependencyName) $ Set.toList otherUnusedDependencies
         put $ ExitFailure 1
       pure baseUsedDependencies
