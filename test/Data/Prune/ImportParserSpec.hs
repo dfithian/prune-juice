@@ -28,6 +28,9 @@ spec = describe "Data.Prune.ImportParser" $ do
   it "should parse something complicated" $ do
     parse oneImport "" "import   qualified   \"foobar\"   Foo.Bar   as   Baz (foo, bar) " `shouldBe` Right (T.ModuleName "Foo.Bar")
 
+  it "should parse dependency name" $ do
+    parse dependencyName "" "name: foo-bar" `shouldBe` Right (T.DependencyName "foo-bar")
+
   it "should parse exposed modules - single line" $ do
     parse exposedModules "" "exposed-modules: Hpack Hpack.Config Hpack.Render Hpack.Yaml"
       `shouldBe` Right (Set.fromList [T.ModuleName "Hpack", T.ModuleName "Hpack.Config", T.ModuleName "Hpack.Render", T.ModuleName "Hpack.Yaml"])

@@ -1,6 +1,6 @@
 name: prune-juice
 
-version: '0.3'
+version: '0.4'
 maintainer: Dan Fithian <daniel.m.fithian@gmail.com>
 license: MIT
 copyright: 2020 Dan Fithian
@@ -58,8 +58,8 @@ dependencies:
   - hpack
   - megaparsec
   - mtl
+  - process
   - text
-  - turtle
   - yaml
 
 extra-source-files:

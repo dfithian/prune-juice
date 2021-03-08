@@ -40,9 +40,10 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
 main :: IO ()
 main = do
   Opts {..} <- parseArgs
+
   packages <- parseStackYaml optsStackYamlFile optsPackages
 
-  dependencyByModule <- liftIO $ getDependencyByModule optsStackYamlFile packages
+  dependencyByModule <- liftIO $ getDependencyByModule packages
   code <- flip execStateT ExitSuccess $ for_ packages $ \T.Package {..} -> do
     baseUsedDependencies <- fmap mconcat . for packageCompilables $ \compilable@T.Compilable {..} -> do
       usedDependencies <- liftIO $ getCompilableUsedDependencies dependencyByModule compilable

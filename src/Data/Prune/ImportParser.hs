@@ -47,6 +47,10 @@ oneImport = void (string "import") *> space
   *> optional (void (padded (quoted pkgName)) *> space)
   *> (T.ModuleName . pack <$> (symbol <* space))
 
+dependencyName :: Parser T.DependencyName
+dependencyName = void (string "name:") *> space
+  *> (T.DependencyName . pack <$> pkgName)
+
 exposedModules :: Parser (Set T.ModuleName)
 exposedModules = void (string "exposed-modules:") *> space
   *> (Set.fromList <$> some (T.ModuleName . pack <$> symbol))
@@ -56,6 +60,10 @@ parseFileImports :: FilePath -> IO (Set T.ModuleName)
 parseFileImports fp = do
   either (fail . ("Failed to parse imports due to " <>) . show) (pure . Set.fromList) . traverse (parse oneImport fp) . filter (isPrefixOf "import ") . lines
     =<< readFile fp
+
+-- |Parse name from the `ghc-pkg` field description.
+parseDependencyName :: String -> IO T.DependencyName
+parseDependencyName input = either (\e -> fail $ "Failed to parse name due to " <> show e <> " original input " <> input) pure $ parse dependencyName "" input
 
 -- |Parse exposed modules from the `ghc-pkg` field description.
 parseExposedModules :: String -> IO (Set T.ModuleName)

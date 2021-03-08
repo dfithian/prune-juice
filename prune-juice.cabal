@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: df7a1f547d2319dc86ec2c25e50344b1d02a254311a8d1a95bfe6a421c974d01
+-- hash: 84bd7f2d1d9b3ef604802184fadc9163327ac0f260b93b167a9dd6061ec492fb
 
 name:           prune-juice
-version:        0.3
+version:        0.4
 synopsis:       Prune unused Haskell dependencies
 description:    Prune unused Haskell dependencies from a Stack and Hpack project - see README at <https://github.com/dfithian/prune-juice#readme>
 category:       Development
@@ -48,8 +48,8 @@ library
     , hpack
     , megaparsec
     , mtl
+    , process
     , text
-    , turtle
     , yaml
   default-language: Haskell2010
 
@@ -72,9 +72,9 @@ executable prune-juice
     , megaparsec
     , mtl
     , optparse-applicative
+    , process
     , prune-juice
     , text
-    , turtle
     , yaml
   default-language: Haskell2010
 
@@ -101,8 +101,8 @@ test-suite test
     , hspec
     , megaparsec
     , mtl
+    , process
     , prune-juice
     , text
-    , turtle
     , yaml
   default-language: Haskell2010
