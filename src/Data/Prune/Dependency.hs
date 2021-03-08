@@ -20,9 +20,9 @@ runOrFail cmd = shellStrict cmd mempty >>= \case
   (ExitSuccess, out) -> pure out
   (ExitFailure _, out) -> fail . unpack $ "Failed to \"" <> cmd <> "\" due to " <> out
 
-getPackageDependencyByModule :: FilePath -> T.Package -> IO (Map T.ModuleName T.DependencyName)
-getPackageDependencyByModule stackYamlFile T.Package {..} = do
-  let allDependencies = packageBaseDependencies <> foldMap T.compilableDependencies packageCompilables
+getDependencyByModule :: FilePath -> [T.Package] -> IO (Map T.ModuleName T.DependencyName)
+getDependencyByModule stackYamlFile packages = do
+  let allDependencies = foldMap T.packageBaseDependencies packages <> foldMap T.compilableDependencies (foldMap T.packageCompilables packages)
       tupleDependency x = (, x) <$> find (\d -> isPrefixOf (T.unDependencyName d) x) allDependencies
   compilerBin <- strip <$> runOrFail ("stack --stack-yaml " <> pack stackYamlFile <> " path --compiler-bin")
   snapshotPkgDb <- strip <$> runOrFail ("stack --stack-yaml " <> pack stackYamlFile <> " path --snapshot-pkg-db")

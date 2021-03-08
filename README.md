@@ -28,7 +28,6 @@ Available options:
 
 It's pretty slow, especially for big projects.
 
-* Load exposed-modules once, instead of doing it for each package
 * Fold over the import lists, removing module names and dependencies that have been used
 
 ## Testing and Availability

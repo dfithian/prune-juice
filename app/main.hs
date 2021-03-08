@@ -11,7 +11,7 @@ import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import qualified Data.Set as Set
 import qualified Options.Applicative as Opt
 
-import Data.Prune.Dependency (getPackageDependencyByModule)
+import Data.Prune.Dependency (getDependencyByModule)
 import Data.Prune.ImportParser (getCompilableUsedDependencies)
 import Data.Prune.Package (parseStackYaml)
 import qualified Data.Prune.Types as T
@@ -36,13 +36,14 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
           <> Opt.metavar "PACKAGE"
           <> Opt.help "Package name(s)" ) )
 
+
 main :: IO ()
 main = do
   Opts {..} <- parseArgs
   packages <- parseStackYaml optsStackYamlFile optsPackages
 
-  code <- flip execStateT ExitSuccess $ for_ packages $ \package@T.Package {..} -> do
-    dependencyByModule <- liftIO $ getPackageDependencyByModule optsStackYamlFile package
+  dependencyByModule <- liftIO $ getDependencyByModule optsStackYamlFile packages
+  code <- flip execStateT ExitSuccess $ for_ packages $ \T.Package {..} -> do
     baseUsedDependencies <- fmap mconcat . for packageCompilables $ \compilable@T.Compilable {..} -> do
       usedDependencies <- liftIO $ getCompilableUsedDependencies dependencyByModule compilable
       let (baseUsedDependencies, otherUsedDependencies) = Set.partition (flip Set.member packageBaseDependencies) usedDependencies
