@@ -19,3 +19,17 @@ Available options:
                            Location of stack.yaml (default: "stack.yaml")
   --package PACKAGE        Package name(s)
 ```
+
+## Improvements
+
+### Performance
+
+It's pretty slow, especially for big projects.
+
+* Load exposed-modules once, instead of doing it for each package
+* Fold over the import lists, removing module names and dependencies that have been used
+
+## Testing and Availability
+
+* Get it on Hackage
+* Get it on Stackage
