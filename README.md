@@ -29,3 +29,4 @@ Available options:
 It's pretty slow, especially for big projects.
 
 * Fold over the import lists, removing module names and dependencies that have been used
+* Write benchmarks to see trends over time
