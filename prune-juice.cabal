@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c82d607d1298918a330352ff35cee89ea7edd8f5b4321866f33d55b7558eb1c7
+-- hash: 53250a2e99ec4cc00ac7de0c8ed487e525ecf153afaeb50913fa85f53a64e6a1
 
 name:           prune-juice
-version:        0.1
+version:        0.2
 synopsis:       Prune unused Haskell dependencies
 description:    Prune unused Haskell dependencies from a Stack/Hpack project
 category:       Development
