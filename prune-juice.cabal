@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d926ce931859112020d38ccfa513e2a89a34fb2b5f94d3c7e34239ff7224eb74
+-- hash: ed0913fd896841549d950ec8ce70007208d1024040fef2b42242c0d684c1cfdf
 
 name:           prune-juice
 version:        0.1
@@ -28,7 +28,6 @@ library
   ghc-options: -Wall -Werror -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog -O0
   build-depends:
       aeson
-    , aeson-better-errors
     , base
     , bytestring
     , containers
@@ -52,7 +51,6 @@ executable prune-juice
   ghc-options: -Wall -Werror -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog -O0
   build-depends:
       aeson
-    , aeson-better-errors
     , base
     , bytestring
     , containers
@@ -81,7 +79,6 @@ test-suite test
   ghc-options: -Wall -Werror -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog -O0
   build-depends:
       aeson
-    , aeson-better-errors
     , base
     , bytestring
     , containers
