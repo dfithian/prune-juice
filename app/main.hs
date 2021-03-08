@@ -41,7 +41,6 @@ main = do
   Opts {..} <- parseArgs
   packages <- parseStackYaml optsStackYamlFile optsPackages
 
-  -- FIXME include local dependencies eventually
   code <- flip execStateT ExitSuccess $ for_ packages $ \package@T.Package {..} -> do
     dependencyByModule <- liftIO $ getPackageDependencyByModule optsStackYamlFile package
     baseUsedDependencies <- fmap mconcat . for packageCompilables $ \compilable@T.Compilable {..} -> do

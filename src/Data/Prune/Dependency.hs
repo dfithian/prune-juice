@@ -27,16 +27,23 @@ getPackageDependencyByModule stackYamlFile T.Package {..} = do
   compilerBin <- strip <$> runOrFail ("stack --stack-yaml " <> pack stackYamlFile <> " path --compiler-bin")
   snapshotPkgDb <- strip <$> runOrFail ("stack --stack-yaml " <> pack stackYamlFile <> " path --snapshot-pkg-db")
   globalPkgDb <- strip <$> runOrFail ("stack --stack-yaml " <> pack stackYamlFile <> " path --global-pkg-db")
+  localPkgDb <- strip <$> runOrFail ("stack --stack-yaml " <> pack stackYamlFile <> " path --local-pkg-db")
   let snapshotGhcPkg = compilerBin <> "/ghc-pkg --package-db " <> snapshotPkgDb
       globalGhcPkg = compilerBin <> "/ghc-pkg --package-db " <> globalPkgDb
+      localGhcPkg = compilerBin <> "/ghc-pkg --package-db " <> localPkgDb
   snapshotPkgs <- mapMaybe tupleDependency . words . strip
     <$> runOrFail (snapshotGhcPkg <> " list --simple-output")
   globalPkgs <- mapMaybe tupleDependency . words . strip
     <$> runOrFail (globalGhcPkg <> " list --simple-output")
+  localPkgs <- mapMaybe tupleDependency . words . strip
+    <$> runOrFail (localGhcPkg <> " list --simple-output")
   snapshotDependencyByModule <- fmap mconcat . for snapshotPkgs $ \(dependencyName, pkg) -> do
     moduleNames <- parseExposedModules . unpack . strip =<< runOrFail (snapshotGhcPkg <> " field " <> pkg <> " exposed-modules")
     pure . Map.fromList . map (, dependencyName) . Set.toList $ moduleNames
   globalDependencyByModule <- fmap mconcat . for globalPkgs $ \(dependencyName, pkg) -> do
     moduleNames <- parseExposedModules . unpack . strip =<< runOrFail (globalGhcPkg <> " field " <> pkg <> " exposed-modules")
     pure . Map.fromList . map (, dependencyName) . Set.toList $ moduleNames
-  pure $ snapshotDependencyByModule <> globalDependencyByModule
+  localDependencyByModule <- fmap mconcat . for localPkgs $ \(dependencyName, pkg) -> do
+    moduleNames <- parseExposedModules . unpack . strip =<< runOrFail (localGhcPkg <> " field " <> pkg <> " exposed-modules")
+    pure . Map.fromList . map (, dependencyName) . Set.toList $ moduleNames
+  pure $ snapshotDependencyByModule <> globalDependencyByModule <> localDependencyByModule

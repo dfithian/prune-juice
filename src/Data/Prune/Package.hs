@@ -65,25 +65,10 @@ parsePackageYaml fp = do
     , packageCompilables = libraries <> internalLibraries <> executables <> tests <> benchmarks
     }
 
-scrubPackage :: Set T.DependencyName -> T.Package -> T.Package
-scrubPackage localDependencyNames package@T.Package {..} =
-  package
-    { T.packageBaseDependencies = Set.difference packageBaseDependencies localDependencyNames
-    , T.packageCompilables = flip map packageCompilables $ \compilable@T.Compilable {..} -> compilable
-        { T.compilableDependencies = Set.difference compilableDependencies localDependencyNames
-        }
-    }
-
--- FIXME remove internal libraries too
-scrubPackages :: [T.Package] -> [T.Package]
-scrubPackages packages =
-  let localDependencyNames = Set.fromList $ T.DependencyName . T.packageName <$> packages
-  in scrubPackage localDependencyNames <$> packages
-
 parseStackYaml :: FilePath -> [Text] -> IO [T.Package]
 parseStackYaml stackYamlFile packages = do
   T.StackYaml {..} <- either (fail . ("Couldn't parse stack.yaml due to " <>) . show) pure . Yaml.decodeEither' =<< BS.readFile stackYamlFile
-  rawPackages <- scrubPackages <$> traverse parsePackageYaml stackYamlPackages
+  rawPackages <- traverse parsePackageYaml stackYamlPackages
   if null packages
     then pure rawPackages
     else pure $ filter (flip elem packages . T.packageName) rawPackages
