@@ -8,6 +8,14 @@ imported by a source file.
 ## Usage
 
 ```bash
-stack install
-prune-juice --help
+$ stack install
+$ prune-juice --help
+Usage: prune-juice [--stack-yaml-file STACK_YAML_FILE] [--package PACKAGE]
+  Prune a Stack project's dependencies
+
+Available options:
+  -h,--help                Show this help text
+  --stack-yaml-file STACK_YAML_FILE
+                           Location of stack.yaml (default: "stack.yaml")
+  --package PACKAGE        Package name(s)
 ```

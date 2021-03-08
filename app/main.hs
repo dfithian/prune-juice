@@ -34,7 +34,7 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
       <*> many ( pack <$> Opt.strOption (
         Opt.long "package"
           <> Opt.metavar "PACKAGE"
-          <> Opt.help "Package name" ) )
+          <> Opt.help "Package name(s)" ) )
 
 main :: IO ()
 main = do
