@@ -12,7 +12,7 @@ import System.FilePath.Posix ((</>))
 import qualified Data.Set as Set
 import qualified Options.Applicative as Opt
 
-import Data.Prune.Cabal (parseCabalFiles, parseCabalProjectFile)
+import Data.Prune.Cabal (findCabalFiles, parseCabalFiles, parseCabalProjectFile)
 import Data.Prune.Dependency (getDependencyByModule)
 import Data.Prune.ImportParser (getCompilableUsedDependencies)
 import Data.Prune.Stack (parseStackYaml)
@@ -42,11 +42,13 @@ main :: IO ()
 main = do
   Opts {..} <- parseArgs
 
-  packageDirs <- parseStackYaml (optsProjectRoot </> "stack.yaml")
+  (buildSystem, packageDirs) <- parseStackYaml (optsProjectRoot </> "stack.yaml")
     <|> parseCabalProjectFile (optsProjectRoot </> "cabal.project")
+    <|> findCabalFiles optsProjectRoot
+  putStrLn $ "Using build system " <> show buildSystem
   packages <- parseCabalFiles packageDirs optsPackages
 
-  dependencyByModule <- liftIO $ getDependencyByModule packages
+  dependencyByModule <- liftIO $ getDependencyByModule buildSystem packages
   code <- flip execStateT ExitSuccess $ for_ packages $ \T.Package {..} -> do
     baseUsedDependencies <- fmap mconcat . for packageCompilables $ \compilable@T.Compilable {..} -> do
       usedDependencies <- liftIO $ getCompilableUsedDependencies dependencyByModule compilable

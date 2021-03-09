@@ -21,10 +21,13 @@ parsePkg s = do
 
 -- |For the dependencies listed in the specified packages, load `ghc-pkg` and inspect the `exposed-modules` field.
 -- Return a map of module to dependency name.
-getDependencyByModule :: [T.Package] -> IO (Map T.ModuleName T.DependencyName)
-getDependencyByModule packages = do
+getDependencyByModule :: T.BuildSystem -> [T.Package] -> IO (Map T.ModuleName T.DependencyName)
+getDependencyByModule buildSystem packages = do
   let allDependencies = foldMap T.packageBaseDependencies packages <> foldMap T.compilableDependencies (foldMap T.packageCompilables packages)
-  rawPkgs <- readProcess "stack" ["exec", "ghc-pkg", "dump"] ""
+  rawPkgs <- case buildSystem of
+    T.Stack -> readProcess "stack" ["exec", "ghc-pkg", "dump"] ""
+    T.CabalProject -> fail "Don't know how to get dependencies for cabal.project"
+    T.Cabal -> fail "Don't know how to get dependencies for cabal"
   allPkgs <- traverse parsePkg . splitOn "\n---\n" . pack $ rawPkgs
   pure
     . Map.fromList

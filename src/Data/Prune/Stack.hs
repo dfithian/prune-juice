@@ -8,6 +8,6 @@ import qualified Data.Yaml as Yaml
 import qualified Data.Prune.Types as T
 
 -- |Parse stack.yaml by file path, filter by explicit package names (if provided), and return the parsed packages.
-parseStackYaml :: FilePath -> IO [FilePath]
+parseStackYaml :: FilePath -> IO (T.BuildSystem, [FilePath])
 parseStackYaml stackYamlFile = do
-  either (fail . ("Couldn't parse stack.yaml due to " <>) . show) (pure . T.stackYamlPackages) . Yaml.decodeEither' =<< BS.readFile stackYamlFile
+  either (fail . ("Couldn't parse stack.yaml due to " <>) . show) (pure . (T.Stack,) . T.stackYamlPackages) . Yaml.decodeEither' =<< BS.readFile stackYamlFile

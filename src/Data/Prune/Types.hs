@@ -7,6 +7,9 @@ import Data.Aeson ((.:), FromJSON, parseJSON, withObject)
 import Data.Set (Set)
 import Data.Text (Text)
 
+data BuildSystem = Stack | CabalProject | Cabal
+  deriving (Eq, Ord, Show)
+
 -- |The type of the thing to compile.
 data CompilableType
   = CompilableTypeLibrary

@@ -105,12 +105,12 @@ parseCabalFiles packageDirs packages = do
     then pure rawPackages
     else pure $ filter (flip elem packages . T.packageName) rawPackages
 
-findCabalFiles :: FilePath -> IO [FilePath]
+findCabalFiles :: FilePath -> IO (T.BuildSystem, [FilePath])
 findCabalFiles projectRoot = do
-  map takeDirectory . filter (isExtensionOf "cabal") . Set.toList <$> listFilesRecursive projectRoot
+  (T.Cabal,) . map takeDirectory . filter (isExtensionOf "cabal") . Set.toList <$> listFilesRecursive projectRoot
 
 -- |Parse cabal.project file by file path.
-parseCabalProjectFile :: FilePath -> IO [FilePath]
+parseCabalProjectFile :: FilePath -> IO (T.BuildSystem, [FilePath])
 parseCabalProjectFile cabalProjectFile = do
   project <- readProject cabalProjectFile
-  pure $ fst <$> prjPackages project
+  pure (T.CabalProject, takeDirectory . fst <$> prjPackages project)
