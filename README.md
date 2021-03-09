@@ -2,27 +2,27 @@
 
 [![Build Status](https://travis-ci.com/dfithian/prune-juice.svg?branch=main)](https://travis-ci.com/dfithian/prune-juice)
 
-Prune unused Haskell dependencies from a Stack/Hpack project. Uses `hpack` to parse the project `package.yaml` files,
-and `ghc-pkg` to load the `exposed-modules` fields of all the direct dependencies of the packages. Parses imports of
-each source file, compares against the exposed modules, and errors if any dependency listed in `package.yaml` is never
-imported by a source file in that package.
+Prune unused Haskell dependencies from a Haskell project. Parses `.cabal` files using either `stack.yaml` or
+`cabal.project` (whichever is available), and `ghc-pkg` to load the `exposed-modules` fields of all the direct
+dependencies of the packages. Parses imports of each source file, compares against the exposed modules, and errors if
+any dependency listed in `<package>.cabal` is never imported by a source file in that package.
 
 ## Usage
 
 ```bash
 $ stack install
 $ prune-juice --help
-Usage: prune-juice [--stack-yaml-file STACK_YAML_FILE] [--package PACKAGE]
+Usage: prune-juice [--project-root PROJECT_ROOT] [--package PACKAGE]
   Prune a Stack project's dependencies
 
 Available options:
   -h,--help                Show this help text
-  --stack-yaml-file STACK_YAML_FILE
-                           Location of stack.yaml (default: "stack.yaml")
+  --project-root PROJECT_ROOT
+                           Project root (default: ".")
   --package PACKAGE        Package name(s)
 ```
 
 ## Notes
 
-In order for `prune-juice` to correctly detect local dependency usage, you must have run `stack build` (or other
-`ghc-pkg` registration mechanism). `prune-juice` does not do this for you.
+In order for `prune-juice` to correctly detect local dependency usage, you have to run `stack build` (or other `ghc-pkg`
+registration mechanism). `prune-juice` does not do this for you.

@@ -1,3 +1,5 @@
 resolver: lts-17.5
 packages:
   - .
+extra-deps:
+- cabal-install-parsers-0.3.0.1

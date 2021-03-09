@@ -1,6 +1,6 @@
 name: prune-juice
 
-version: '0.4'
+version: '0.5'
 maintainer: Dan Fithian <daniel.m.fithian@gmail.com>
 license: MIT
 copyright: 2020 Dan Fithian
@@ -52,6 +52,8 @@ dependencies:
   - aeson
   - base < 5.0
   - bytestring
+  - Cabal
+  - cabal-install-parsers
   - containers
   - directory
   - filepath

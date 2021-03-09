@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 84bd7f2d1d9b3ef604802184fadc9163327ac0f260b93b167a9dd6061ec492fb
+-- hash: 46ea2ec75ecb7d2782fc30922122c2979a0f13987f1a37f53c7e5cfc808e75a5
 
 name:           prune-juice
-version:        0.4
+version:        0.5
 synopsis:       Prune unused Haskell dependencies
 description:    Prune unused Haskell dependencies from a Stack and Hpack project - see README at <https://github.com/dfithian/prune-juice#readme>
 category:       Development
@@ -28,9 +28,12 @@ source-repository head
 
 library
   exposed-modules:
+      Data.Prune.Cabal
       Data.Prune.Dependency
+      Data.Prune.File
       Data.Prune.ImportParser
       Data.Prune.Package
+      Data.Prune.Stack
       Data.Prune.Types
   other-modules:
       Paths_prune_juice
@@ -39,9 +42,11 @@ library
   default-extensions: ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveGeneric DerivingStrategies DerivingVia EmptyDataDecls FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude NoMonomorphismRestriction OverloadedStrings QuasiQuotes RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
   ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
-      aeson
+      Cabal
+    , aeson
     , base <5.0
     , bytestring
+    , cabal-install-parsers
     , containers
     , directory
     , filepath
@@ -62,9 +67,11 @@ executable prune-juice
   default-extensions: ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveGeneric DerivingStrategies DerivingVia EmptyDataDecls FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude NoMonomorphismRestriction OverloadedStrings QuasiQuotes RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
   ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
-      aeson
+      Cabal
+    , aeson
     , base <5.0
     , bytestring
+    , cabal-install-parsers
     , containers
     , directory
     , filepath
@@ -82,6 +89,7 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: main.hs
   other-modules:
+      Data.Prune.CabalSpec
       Data.Prune.ImportParserSpec
       Data.Prune.PackageSpec
       Paths_prune_juice
@@ -90,9 +98,11 @@ test-suite test
   default-extensions: ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveGeneric DerivingStrategies DerivingVia EmptyDataDecls FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude NoMonomorphismRestriction OverloadedStrings QuasiQuotes RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
   ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
-      aeson
+      Cabal
+    , aeson
     , base <5.0
     , bytestring
+    , cabal-install-parsers
     , containers
     , directory
     , file-path-th
