@@ -26,8 +26,8 @@ getDependencyByModule buildSystem packages = do
   let allDependencies = foldMap T.packageBaseDependencies packages <> foldMap T.compilableDependencies (foldMap T.packageCompilables packages)
   rawPkgs <- case buildSystem of
     T.Stack -> readProcess "stack" ["exec", "ghc-pkg", "dump"] ""
-    T.CabalProject -> fail "Don't know how to get dependencies for cabal.project"
-    T.Cabal -> fail "Don't know how to get dependencies for cabal"
+    T.CabalProject -> readProcess "cabal" ["v2-exec", "ghc-pkg", "dump"] ""
+    T.Cabal -> readProcess "cabal" ["v2-exec", "ghc-pkg", "dump"] ""
   allPkgs <- traverse parsePkg . splitOn "\n---\n" . pack $ rawPkgs
   pure
     . Map.fromList
