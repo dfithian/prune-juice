@@ -18,7 +18,7 @@ spec :: Spec
 spec = describe "Data.Prune.Package" $ do
   let stackYamlFile = $(fileRelativeToAbsolute "../../../stack.yaml")
   it "parses package.yaml files" $ do
-    stackYaml <- parseStackYaml stackYamlFile
+    (_, stackYaml) <- parseStackYaml stackYamlFile
     [T.Package {..}] <- parsePackageYamls stackYaml []
     packageName `shouldBe` "prune-juice"
     packageBaseDependencies `shouldSatisfy` Set.member (T.DependencyName "base")
