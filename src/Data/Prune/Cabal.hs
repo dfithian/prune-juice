@@ -3,7 +3,6 @@ module Data.Prune.Cabal where
 import Prelude
 
 import Cabal.Project (prjPackages, readProject)
-import Data.List (isSuffixOf)
 import Data.Maybe (maybeToList)
 import Data.Prune.File (listFilesRecursive)
 import Data.Set (Set)
@@ -18,7 +17,7 @@ import Distribution.Types.Executable (Executable)
 import Distribution.Types.Library (Library)
 import Distribution.Types.TestSuite (TestSuite)
 import System.Directory (listDirectory)
-import System.FilePath.Posix ((</>), isExtensionOf)
+import System.FilePath.Posix ((</>), isExtensionOf, takeDirectory)
 import qualified Data.Set as Set
 import qualified Distribution.Types.Benchmark as Benchmark
 import qualified Distribution.Types.BuildInfo as BuildInfo
@@ -82,7 +81,7 @@ headMay = \case
 -- |Parse a single cabal file.
 parseCabalFile :: FilePath -> IO T.Package
 parseCabalFile fp = do
-  cabalFile <- maybe (fail $ "No .cabal file found in " <> fp) pure . headMay . filter (isSuffixOf "cabal") =<< listDirectory fp
+  cabalFile <- maybe (fail $ "No .cabal file found in " <> fp) pure . headMay . filter (isExtensionOf "cabal") =<< listDirectory fp
   genericPackageDescription <- readGenericPackageDescription Verbosity.silent $ fp </> cabalFile
   let baseDependencies = maybe mempty getDependencyNames $ GenericPackageDescription.condLibrary genericPackageDescription
       packageDescription = GenericPackageDescription.packageDescription genericPackageDescription
@@ -106,6 +105,11 @@ parseCabalFiles packageDirs packages = do
     then pure rawPackages
     else pure $ filter (flip elem packages . T.packageName) rawPackages
 
+findCabalFiles :: FilePath -> IO [FilePath]
+findCabalFiles projectRoot = do
+  map takeDirectory . filter (isExtensionOf "cabal") . Set.toList <$> listFilesRecursive projectRoot
+
+-- |Parse cabal.project file by file path.
 parseCabalProjectFile :: FilePath -> IO [FilePath]
 parseCabalProjectFile cabalProjectFile = do
   project <- readProject cabalProjectFile
