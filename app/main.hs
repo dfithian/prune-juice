@@ -1,7 +1,7 @@
 import Prelude
 
 import Control.Applicative ((<|>), many)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (execStateT, put)
 import Data.Foldable (for_, traverse_)
@@ -46,6 +46,8 @@ main = do
     <|> parseCabalProjectFile (optsProjectRoot </> "cabal.project")
     <|> findCabalFiles optsProjectRoot
   putStrLn $ "Using build system " <> show buildSystem
+  when (buildSystem `elem` [T.CabalProject, T.Cabal]) $
+    putStrLn $ "[WARNING] Cabal is not supported"
   packages <- parseCabalFiles packageDirs optsPackages
 
   dependencyByModule <- liftIO $ getDependencyByModule buildSystem packages

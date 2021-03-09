@@ -25,4 +25,3 @@ spec = describe "Data.Prune.Cabal" $ do
     compilableType `shouldBe` T.CompilableTypeTest
     compilableDependencies `shouldSatisfy` not . Set.null
     compilableFiles `shouldSatisfy` not . Set.null . Set.filter (isSuffixOf "PackageSpec.hs")
-
