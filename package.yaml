@@ -6,7 +6,7 @@ license: MIT
 copyright: 2020 Dan Fithian
 category: Development
 synopsis: 'Prune unused Haskell dependencies'
-description: 'Prune unused Haskell dependencies from a Stack and Hpack project - see README at <https://github.com/dfithian/prune-juice#readme>'
+description: 'Prune unused Haskell dependencies - see README at <https://github.com/dfithian/prune-juice#readme>'
 github: dfithian/prune-juice
 
 ghc-options:
