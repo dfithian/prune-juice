@@ -19,6 +19,9 @@ spec = describe "Data.Prune.ImportParser" $ do
   it "should parse imports" $ do
     parse oneImport "" "import Foo.Bar (foo, bar)" `shouldBe` Right (T.ModuleName "Foo.Bar")
 
+  it "should parse hs-boot files" $ do
+    parse oneImport "" "import {-# SOURCE #-} Foo.Bar" `shouldBe` Right (T.ModuleName "Foo.Bar")
+
   it "should parse qualified" $ do
     parse oneImport "" "import qualified Foo.Bar as Baz" `shouldBe` Right (T.ModuleName "Foo.Bar")
 
