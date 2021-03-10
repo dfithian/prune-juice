@@ -13,20 +13,35 @@ any dependency listed in `<package>.cabal` is never imported by a source file in
 $ stack install
 $ prune-juice --help
 Usage: prune-juice [--project-root PROJECT_ROOT] [--default-ignore]
-                   [--ignore IGNORE] [--package PACKAGE]
+                   [--no-ignore-self] [--extra-ignore EXTRA_IGNORE]
+                   [--package PACKAGE] [--verbose]
   Prune a Haskell project's dependencies
 
 Available options:
   -h,--help                Show this help text
   --project-root PROJECT_ROOT
                            Project root (default: ".")
-  --default-ignore         Use the default ignore list (base, hspec)
-  --ignore IGNORE          Dependencies(s) to ignore (overrides the default
-                           list)
+  --no-default-ignore      Don't use the default ignore list
+                           ([base,hspec,tasty])
+  --no-ignore-self         Error if an executable doesn't use the library it's
+                           defined with
+  --extra-ignore EXTRA_IGNORE
+                           Dependencies(s) to ignore in addition to the default
+                           ignore list
   --package PACKAGE        Package name(s)
+  --verbose                Turn on verbose logging
 ```
 
-## Notes
+## Known issues
+
+It doesn't work great on `cabal`-only projects, because the incantation for `ghc-pkg` is a little more complicated than
+the one for `stack`.
 
 In order for `prune-juice` to correctly detect local dependency usage, you have to run `stack build` (or other `ghc-pkg`
 registration mechanism). `prune-juice` does not do this for you.
+
+`prune-juice` doesn't know about test discovery or `Paths_`-type files, so there is a mechanism to ignore these types of
+packages.
+
+`prune-juice` doesn't know about package imports, so if a file has something like `import "cryptohash" Crypto.Hash` it
+will interpret this as an import from both `cryptonite` and `cryptohash`, if both dependencies are available.

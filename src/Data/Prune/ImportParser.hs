@@ -5,8 +5,11 @@ import Prelude
 
 import Control.Applicative ((<|>), optional, some)
 import Control.Monad (void)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Logger (MonadLogger, logInfo)
 import Data.List (isPrefixOf)
 import Data.Map (Map)
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Text (pack)
 import Data.Traversable (for)
@@ -73,14 +76,17 @@ parseExposedModules input =
     else either (\e -> fail $ "Failed to parse exposed modules due to " <> show e <> " original input " <> input) pure $ parse exposedModules "" input
 
 -- |Get the dependencies used by a list of modules imported by a Haskell source file.
-getUsedDependencies :: Map T.ModuleName T.DependencyName -> Set T.ModuleName -> Set T.DependencyName
+getUsedDependencies :: Map T.ModuleName (Set T.DependencyName) -> Set T.ModuleName -> Set T.DependencyName
 getUsedDependencies dependencyByModule = foldr go mempty . Set.toList
   where
-    go next acc = acc <> maybe mempty Set.singleton (Map.lookup next dependencyByModule)
+    go next acc = acc <> fromMaybe mempty (Map.lookup next dependencyByModule)
 
 -- |Get the dependencies used by a thing to compile by (1) parsing each source file's imports, (2) getting the
 -- dependencies each of those files use, and (3) smooshing all the dependencies together to return.
-getCompilableUsedDependencies :: Map T.ModuleName T.DependencyName -> T.Compilable -> IO (Set T.DependencyName)
+getCompilableUsedDependencies :: (MonadIO m, MonadLogger m) => Map T.ModuleName (Set T.DependencyName) -> T.Compilable -> m (Set T.DependencyName)
 getCompilableUsedDependencies dependencyByModule T.Compilable {..} = fmap mconcat . for (Set.toList compilableFiles) $ \fp -> do
-  moduleNames <- parseFileImports fp
-  pure $ getUsedDependencies dependencyByModule moduleNames
+  moduleNames <- liftIO $ parseFileImports fp
+  $logInfo $ "Got module names for " <> pack fp <> ": " <> pack (show moduleNames)
+  let usedDependencies = getUsedDependencies dependencyByModule moduleNames
+  $logInfo $ "Got dependency names for " <> pack fp <> ": " <> pack (show usedDependencies)
+  pure usedDependencies

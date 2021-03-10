@@ -5,7 +5,7 @@ import Prelude
 
 import Data.Aeson ((.:), FromJSON, parseJSON, withObject)
 import Data.Set (Set)
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 
 data BuildSystem = Stack | CabalProject | Cabal
   deriving (Eq, Ord, Show)
@@ -27,15 +27,24 @@ instance Show CompilableType where
 
 -- |The name of the thing to compile.
 newtype CompilableName = CompilableName { unCompilableName :: Text }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Show CompilableName where
+  show = unpack . unCompilableName
 
 -- |The name of the dependency as listed in package.yaml
 data DependencyName = DependencyName { unDependencyName :: Text }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Show DependencyName where
+  show = unpack . unDependencyName
 
 -- |A qualified module name, like `Foo.Bar`
 data ModuleName = ModuleName { unModuleName :: Text }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Show ModuleName where
+  show = unpack . unModuleName
 
 -- |A thing to compile.
 data Compilable = Compilable

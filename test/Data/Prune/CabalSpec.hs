@@ -2,6 +2,7 @@ module Data.Prune.CabalSpec where
 
 import Prelude
 
+import Control.Monad.Logger (runNoLoggingT)
 import Data.Foldable (find)
 import Data.List (isSuffixOf)
 import System.FilePath.TH (fileRelativeToAbsolute)
@@ -18,10 +19,10 @@ spec = describe "Data.Prune.Cabal" $ do
   let cabalProjectFile = $(fileRelativeToAbsolute "../../../cabal.project")
   it "parses .cabal files" $ do
     (_, cabalProject) <- parseCabalProjectFile cabalProjectFile
-    [T.Package {..}] <- parseCabalFiles cabalProject mempty []
+    [T.Package {..}] <- runNoLoggingT $ parseCabalFiles cabalProject mempty []
     packageName `shouldBe` "prune-juice"
     packageBaseDependencies `shouldSatisfy` Set.member (T.DependencyName "base")
     T.Compilable {..} <- maybe (fail "No compilable with the name \"test\"") pure $ find ((==) (T.CompilableName "test") . T.compilableName) packageCompilables
     compilableType `shouldBe` T.CompilableTypeTest
     compilableDependencies `shouldSatisfy` not . Set.null
-    compilableFiles `shouldSatisfy` not . Set.null . Set.filter (isSuffixOf "PackageSpec.hs")
+    compilableFiles `shouldSatisfy` not . Set.null . Set.filter (isSuffixOf "CabalSpec.hs")

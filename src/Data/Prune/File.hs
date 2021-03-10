@@ -21,6 +21,6 @@ listFilesRecursive dir = do
       isDir <- doesDirectoryExist path
       isSymlink <- pathIsSymbolicLink path
       case (isSymlink, isDir) of
-        (True, _) -> pure mempty
+        (True, True) -> pure mempty
         (_, True) -> listFilesRecursive path
         _ -> pure $ Set.singleton path

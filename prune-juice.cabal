@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d6ffa83d9abee4ec0567a6144f3247c8d6846b7dd37f4dff280b121c88d6aca3
+-- hash: abe3414c7a1bb62701a300318224b85d8df88e1c508cb6ed260294ea435e560d
 
 name:           prune-juice
 version:        0.5
@@ -32,7 +32,6 @@ library
       Data.Prune.Dependency
       Data.Prune.File
       Data.Prune.ImportParser
-      Data.Prune.Package
       Data.Prune.Stack
       Data.Prune.Types
   other-modules:
@@ -50,8 +49,8 @@ library
     , containers
     , directory
     , filepath
-    , hpack
     , megaparsec
+    , monad-logger
     , mtl
     , process
     , text
@@ -75,8 +74,8 @@ executable prune-juice
     , containers
     , directory
     , filepath
-    , hpack
     , megaparsec
+    , monad-logger
     , mtl
     , optparse-applicative
     , process
@@ -91,7 +90,6 @@ test-suite test
   other-modules:
       Data.Prune.CabalSpec
       Data.Prune.ImportParserSpec
-      Data.Prune.PackageSpec
       Paths_prune_juice
   hs-source-dirs:
       test
@@ -107,9 +105,9 @@ test-suite test
     , directory
     , file-path-th
     , filepath
-    , hpack
     , hspec
     , megaparsec
+    , monad-logger
     , mtl
     , process
     , prune-juice
