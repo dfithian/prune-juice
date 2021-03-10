@@ -1,3 +1,7 @@
+## 0.6
+
+* Better support for Cabal
+
 ## 0.5
 
 * Use `cabal` files instead of `hpack` as a way to support more users

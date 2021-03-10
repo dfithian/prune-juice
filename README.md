@@ -34,9 +34,6 @@ Available options:
 
 ## Known issues
 
-It doesn't work great on `cabal`-only projects, because the incantation for `ghc-pkg` is a little more complicated than
-the one for `stack`.
-
 In order for `prune-juice` to correctly detect local dependency usage, you have to run `stack build` (or other `ghc-pkg`
 registration mechanism). `prune-juice` does not do this for you.
 

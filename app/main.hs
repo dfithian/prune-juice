@@ -80,8 +80,6 @@ main = do
     <|> findCabalFiles optsProjectRoot
   putStrLn $ "Using build system " <> show buildSystem
   putStrLn $ "Using ignore list " <> show (Set.toList ignoreList)
-  when (buildSystem `elem` [T.CabalProject, T.Cabal]) $
-    putStrLn $ "[WARNING] Cabal is not supported"
   code <- logger $ do
     packages <- parseCabalFiles packageDirs ignoreList optsPackages
 
