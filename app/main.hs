@@ -1,7 +1,7 @@
 import Prelude
 
-import Control.Applicative ((<|>), many)
-import Control.Monad (unless, when)
+import Control.Applicative ((<|>), many, optional)
+import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (defaultOutput, runLoggingT)
 import Control.Monad.State (execStateT, put)
@@ -28,6 +28,7 @@ data Opts = Opts
   , optsExtraIgnoreList :: [T.DependencyName]
   , optsPackages :: [Text]
   , optsVerbose :: Bool
+  , optsBuildSystem :: Maybe T.BuildSystem
   }
 
 defaultIgnoreList :: Set T.DependencyName
@@ -63,8 +64,11 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
           <> Opt.help "Package name(s)" ) )
       <*> Opt.switch (
         Opt.long "verbose"
-          <> Opt.help "Turn on verbose logging"
-      )
+          <> Opt.help "Turn on verbose logging" )
+      <*> optional ( Opt.option (Opt.maybeReader T.parseBuildSystem) (
+        Opt.long "build-system"
+          <> Opt.metavar "BUILD_SYSTEM"
+          <> Opt.help ("Build system to use instead of inference (one of " <> show T.allBuildSystems <> ")") ) )
 
 main :: IO ()
 main = do
@@ -75,9 +79,13 @@ main = do
         True -> defaultOutput stdout
         False -> \_ _ _ _ -> pure ()
 
-  (buildSystem, packageDirs) <- parseStackYaml (optsProjectRoot </> "stack.yaml")
-    <|> parseCabalProjectFile (optsProjectRoot </> "cabal.project")
-    <|> findCabalFiles optsProjectRoot
+  (buildSystem, packageDirs) <- case optsBuildSystem of
+    Just T.Stack -> parseStackYaml (optsProjectRoot </> "stack.yaml")
+    Just T.CabalProject -> parseCabalProjectFile (optsProjectRoot </> "cabal.project")
+    Just T.Cabal -> findCabalFiles optsProjectRoot
+    Nothing -> parseStackYaml (optsProjectRoot </> "stack.yaml")
+      <|> parseCabalProjectFile (optsProjectRoot </> "cabal.project")
+      <|> findCabalFiles optsProjectRoot
   putStrLn $ "Using build system " <> show buildSystem
   putStrLn $ "Using ignore list " <> show (Set.toList ignoreList)
   code <- logger $ do

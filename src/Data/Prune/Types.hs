@@ -8,7 +8,23 @@ import Data.Set (Set)
 import Data.Text (Text, unpack)
 
 data BuildSystem = Stack | CabalProject | Cabal
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Bounded, Enum)
+
+instance Show BuildSystem where
+  show = \case
+    Stack -> "stack"
+    CabalProject -> "cabal-project"
+    Cabal -> "cabal"
+
+parseBuildSystem :: String -> Maybe BuildSystem
+parseBuildSystem = \case
+  "stack" -> Just Stack
+  "cabal-project" -> Just CabalProject
+  "cabal" -> Just Cabal
+  _ -> Nothing
+
+allBuildSystems :: [BuildSystem]
+allBuildSystems = [minBound..maxBound]
 
 -- |The type of the thing to compile.
 data CompilableType

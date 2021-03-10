@@ -12,9 +12,9 @@ any dependency listed in `<package>.cabal` is never imported by a source file in
 ```bash
 $ stack install
 $ prune-juice --help
-Usage: prune-juice [--project-root PROJECT_ROOT] [--default-ignore]
+Usage: prune-juice [--project-root PROJECT_ROOT] [--no-default-ignore]
                    [--no-ignore-self] [--extra-ignore EXTRA_IGNORE]
-                   [--package PACKAGE] [--verbose]
+                   [--package PACKAGE] [--verbose] [--build-system BUILD_SYSTEM]
   Prune a Haskell project's dependencies
 
 Available options:
@@ -30,6 +30,9 @@ Available options:
                            ignore list
   --package PACKAGE        Package name(s)
   --verbose                Turn on verbose logging
+  --build-system BUILD_SYSTEM
+                           Build system to use instead of inference (one of
+                           [stack,cabal-project,cabal])
 ```
 
 ## Known issues
