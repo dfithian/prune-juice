@@ -20,8 +20,8 @@ import qualified Data.Set as Set
 import qualified Data.Prune.Types as T
 
 -- |Get the dependencies for a thing to compile.
-getSectionDependencyNames :: Section a -> Set T.DependencyName
-getSectionDependencyNames = Set.fromList . map (T.DependencyName . pack) . Map.keys . unDependencies . sectionDependencies
+getSectionDependencyNames :: Set T.DependencyName -> Section a -> Set T.DependencyName
+getSectionDependencyNames ignores = flip Set.difference ignores . Set.fromList . map (T.DependencyName . pack) . Map.keys . unDependencies . sectionDependencies
 
 -- |Get the Haskell source files to compile.
 getSectionFiles :: FilePath -> Section a -> IO (Set FilePath)
@@ -31,20 +31,20 @@ getSectionFiles fp section = fmap mconcat . for (sectionSourceDirs section) $ \d
 
 -- |Parse a thing to compile.
 getSectionCompilables :: FilePath -> T.CompilableType -> Set T.DependencyName -> Map String (Section a) -> IO [T.Compilable]
-getSectionCompilables fp typ baseDependencies sections = for (Map.toList sections) $ \(name, section) -> do
+getSectionCompilables fp typ ignores sections = for (Map.toList sections) $ \(name, section) -> do
   sourceFiles <- getSectionFiles fp section
-  pure $ T.Compilable (T.CompilableName (pack name)) typ (Set.difference (getSectionDependencyNames section) baseDependencies) sourceFiles
+  pure $ T.Compilable (T.CompilableName (pack name)) typ (getSectionDependencyNames ignores section) sourceFiles
 
 -- |Parse a single package.yaml file.
-parsePackageYaml :: FilePath -> IO T.Package
-parsePackageYaml fp = do
+parsePackageYaml :: FilePath -> Set T.DependencyName -> IO T.Package
+parsePackageYaml fp ignores = do
   package <- either fail (pure . decodeResultPackage) =<< readPackageConfig (defaultDecodeOptions { decodeOptionsTarget = fp </> packageConfig })
-  let baseDependencies = maybe mempty getSectionDependencyNames $ packageLibrary package
-  libraries         <- getSectionCompilables fp T.CompilableTypeLibrary    baseDependencies $ maybe mempty (Map.singleton (packageName package)) $ packageLibrary package
-  internalLibraries <- getSectionCompilables fp T.CompilableTypeLibrary    baseDependencies $ packageInternalLibraries package
-  executables       <- getSectionCompilables fp T.CompilableTypeExecutable baseDependencies $ packageExecutables package
-  tests             <- getSectionCompilables fp T.CompilableTypeTest       baseDependencies $ packageTests package
-  benchmarks        <- getSectionCompilables fp T.CompilableTypeBenchmark  baseDependencies $ packageBenchmarks package
+  let baseDependencies = maybe mempty (getSectionDependencyNames ignores) $ packageLibrary package
+  libraries         <- getSectionCompilables fp T.CompilableTypeLibrary    (ignores <> baseDependencies) $ maybe mempty (Map.singleton (packageName package)) $ packageLibrary package
+  internalLibraries <- getSectionCompilables fp T.CompilableTypeLibrary    (ignores <> baseDependencies) $ packageInternalLibraries package
+  executables       <- getSectionCompilables fp T.CompilableTypeExecutable (ignores <> baseDependencies) $ packageExecutables package
+  tests             <- getSectionCompilables fp T.CompilableTypeTest       (ignores <> baseDependencies) $ packageTests package
+  benchmarks        <- getSectionCompilables fp T.CompilableTypeBenchmark  (ignores <> baseDependencies) $ packageBenchmarks package
   pure T.Package
     { packageName = pack $ packageName package
     , packageBaseDependencies = baseDependencies
@@ -52,9 +52,9 @@ parsePackageYaml fp = do
     }
 
 -- |Parse package.yaml files by file path, filter by explicit package names (if provided), and return the parsed packages.
-parsePackageYamls :: [FilePath] -> [Text] -> IO [T.Package]
-parsePackageYamls packageDirs packages = do
-  rawPackages <- traverse parsePackageYaml packageDirs
+parsePackageYamls :: [FilePath] -> Set T.DependencyName -> [Text] -> IO [T.Package]
+parsePackageYamls packageDirs ignores packages = do
+  rawPackages <- traverse (flip parsePackageYaml ignores) packageDirs
   if null packages
     then pure rawPackages
     else pure $ filter (flip elem packages . T.packageName) rawPackages

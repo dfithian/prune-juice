@@ -18,7 +18,7 @@ spec = describe "Data.Prune.Cabal" $ do
   let cabalProjectFile = $(fileRelativeToAbsolute "../../../cabal.project")
   it "parses .cabal files" $ do
     (_, cabalProject) <- parseCabalProjectFile cabalProjectFile
-    [T.Package {..}] <- parseCabalFiles cabalProject []
+    [T.Package {..}] <- parseCabalFiles cabalProject mempty []
     packageName `shouldBe` "prune-juice"
     packageBaseDependencies `shouldSatisfy` Set.member (T.DependencyName "base")
     T.Compilable {..} <- maybe (fail "No compilable with the name \"test\"") pure $ find ((==) (T.CompilableName "test") . T.compilableName) packageCompilables

@@ -19,7 +19,7 @@ spec = describe "Data.Prune.Package" $ do
   let stackYamlFile = $(fileRelativeToAbsolute "../../../stack.yaml")
   it "parses package.yaml files" $ do
     (_, stackYaml) <- parseStackYaml stackYamlFile
-    [T.Package {..}] <- parsePackageYamls stackYaml []
+    [T.Package {..}] <- parsePackageYamls stackYaml mempty []
     packageName `shouldBe` "prune-juice"
     packageBaseDependencies `shouldSatisfy` Set.member (T.DependencyName "base")
     T.Compilable {..} <- maybe (fail "No compilable with the name \"test\"") pure $ find ((==) (T.CompilableName "test") . T.compilableName) packageCompilables

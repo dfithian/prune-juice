@@ -12,13 +12,17 @@ any dependency listed in `<package>.cabal` is never imported by a source file in
 ```bash
 $ stack install
 $ prune-juice --help
-Usage: prune-juice [--project-root PROJECT_ROOT] [--package PACKAGE]
-  Prune a Stack project's dependencies
+Usage: prune-juice [--project-root PROJECT_ROOT] [--default-ignore]
+                   [--ignore IGNORE] [--package PACKAGE]
+  Prune a Haskell project's dependencies
 
 Available options:
   -h,--help                Show this help text
   --project-root PROJECT_ROOT
                            Project root (default: ".")
+  --default-ignore         Use the default ignore list (base, hspec)
+  --ignore IGNORE          Dependencies(s) to ignore (overrides the default
+                           list)
   --package PACKAGE        Package name(s)
 ```
 

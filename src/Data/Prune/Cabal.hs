@@ -36,8 +36,8 @@ import qualified Distribution.Verbosity as Verbosity
 import qualified Data.Prune.Types as T
 
 -- |Get the dependencies for a thing to compile.
-getDependencyNames :: CondTree a [Dependency] b -> Set T.DependencyName
-getDependencyNames = Set.fromList . map (T.DependencyName . pack.  PackageName.unPackageName . Dependency.depPkgName) . CondTree.condTreeConstraints
+getDependencyNames :: Set T.DependencyName -> CondTree a [Dependency] b -> Set T.DependencyName
+getDependencyNames ignores = flip Set.difference ignores . Set.fromList . map (T.DependencyName . pack.  PackageName.unPackageName . Dependency.depPkgName) . CondTree.condTreeConstraints
 
 -- |Get the Haskell source files to compile.
 getSourceFiles :: FilePath -> BuildInfo -> IO (Set FilePath)
@@ -47,31 +47,31 @@ getSourceFiles fp buildInfo = fmap mconcat . for (BuildInfo.hsSourceDirs buildIn
 
 -- |Parse a library to compile.
 getLibraryCompilable :: FilePath -> Set T.DependencyName -> Text -> CondTree a [Dependency] Library -> IO T.Compilable
-getLibraryCompilable fp baseDependencies name tree = do
+getLibraryCompilable fp ignores name tree = do
   let compilableName = T.CompilableName name
   sourceFiles <- getSourceFiles fp . Library.libBuildInfo . CondTree.condTreeData $ tree
-  pure $ T.Compilable compilableName T.CompilableTypeLibrary (Set.difference (getDependencyNames tree) baseDependencies) sourceFiles
+  pure $ T.Compilable compilableName T.CompilableTypeLibrary (getDependencyNames ignores tree) sourceFiles
 
 -- |Parse an executable to compile.
 getExecutableCompilable :: FilePath -> Set T.DependencyName -> Text -> CondTree a [Dependency] Executable -> IO T.Compilable
-getExecutableCompilable fp baseDependencies name tree = do
+getExecutableCompilable fp ignores name tree = do
   let compilableName = T.CompilableName name
   sourceFiles <- getSourceFiles fp . Executable.buildInfo . CondTree.condTreeData $ tree
-  pure $ T.Compilable compilableName T.CompilableTypeExecutable (Set.difference (getDependencyNames tree) baseDependencies) sourceFiles
+  pure $ T.Compilable compilableName T.CompilableTypeExecutable (getDependencyNames ignores tree) sourceFiles
 
 -- |Parse a test to compile.
 getTestCompilable :: FilePath -> Set T.DependencyName -> Text -> CondTree a [Dependency] TestSuite -> IO T.Compilable
-getTestCompilable fp baseDependencies name tree = do
+getTestCompilable fp ignores name tree = do
   let compilableName = T.CompilableName name
   sourceFiles <- getSourceFiles fp . TestSuite.testBuildInfo . CondTree.condTreeData $ tree
-  pure $ T.Compilable compilableName T.CompilableTypeTest (Set.difference (getDependencyNames tree) baseDependencies) sourceFiles
+  pure $ T.Compilable compilableName T.CompilableTypeTest (getDependencyNames ignores tree) sourceFiles
 
 -- |Parse a benchmark to compile.
 getBenchmarkCompilable :: FilePath -> Set T.DependencyName -> Text -> CondTree a [Dependency] Benchmark -> IO T.Compilable
-getBenchmarkCompilable fp baseDependencies name tree = do
+getBenchmarkCompilable fp ignores name tree = do
   let compilableName = T.CompilableName name
   sourceFiles <- getSourceFiles fp . Benchmark.benchmarkBuildInfo . CondTree.condTreeData $ tree
-  pure $ T.Compilable compilableName T.CompilableTypeBenchmark (Set.difference (getDependencyNames tree) baseDependencies) sourceFiles
+  pure $ T.Compilable compilableName T.CompilableTypeBenchmark (getDependencyNames ignores tree) sourceFiles
 
 headMay :: [a] -> Maybe a
 headMay = \case
@@ -79,18 +79,18 @@ headMay = \case
   x:_ -> Just x
 
 -- |Parse a single cabal file.
-parseCabalFile :: FilePath -> IO T.Package
-parseCabalFile fp = do
+parseCabalFile :: FilePath -> Set T.DependencyName -> IO T.Package
+parseCabalFile fp ignores = do
   cabalFile <- maybe (fail $ "No .cabal file found in " <> fp) pure . headMay . filter (isExtensionOf "cabal") =<< listDirectory fp
   genericPackageDescription <- readGenericPackageDescription Verbosity.silent $ fp </> cabalFile
-  let baseDependencies = maybe mempty getDependencyNames $ GenericPackageDescription.condLibrary genericPackageDescription
+  let baseDependencies = maybe mempty (getDependencyNames ignores) $ GenericPackageDescription.condLibrary genericPackageDescription
       packageDescription = GenericPackageDescription.packageDescription genericPackageDescription
       packageName = pack . PackageName.unPackageName . PackageId.pkgName . PackageDescription.package $ packageDescription
-  libraries         <- traverse (getLibraryCompilable    fp baseDependencies packageName) . maybeToList . GenericPackageDescription.condLibrary $ genericPackageDescription
-  internalLibraries <- traverse (getLibraryCompilable    fp baseDependencies <$> pack . UnqualComponentName.unUnqualComponentName . fst <*> snd) . GenericPackageDescription.condSubLibraries $ genericPackageDescription
-  executables       <- traverse (getExecutableCompilable fp baseDependencies <$> pack . UnqualComponentName.unUnqualComponentName . fst <*> snd) . GenericPackageDescription.condExecutables $ genericPackageDescription
-  tests             <- traverse (getTestCompilable       fp baseDependencies <$> pack . UnqualComponentName.unUnqualComponentName . fst <*> snd) . GenericPackageDescription.condTestSuites $ genericPackageDescription
-  benchmarks        <- traverse (getBenchmarkCompilable  fp baseDependencies <$> pack . UnqualComponentName.unUnqualComponentName . fst <*> snd) . GenericPackageDescription.condBenchmarks $ genericPackageDescription
+  libraries         <- traverse (getLibraryCompilable    fp (ignores <> baseDependencies) packageName) . maybeToList . GenericPackageDescription.condLibrary $ genericPackageDescription
+  internalLibraries <- traverse (getLibraryCompilable    fp (ignores <> baseDependencies) <$> pack . UnqualComponentName.unUnqualComponentName . fst <*> snd) . GenericPackageDescription.condSubLibraries $ genericPackageDescription
+  executables       <- traverse (getExecutableCompilable fp (ignores <> baseDependencies) <$> pack . UnqualComponentName.unUnqualComponentName . fst <*> snd) . GenericPackageDescription.condExecutables $ genericPackageDescription
+  tests             <- traverse (getTestCompilable       fp (ignores <> baseDependencies) <$> pack . UnqualComponentName.unUnqualComponentName . fst <*> snd) . GenericPackageDescription.condTestSuites $ genericPackageDescription
+  benchmarks        <- traverse (getBenchmarkCompilable  fp (ignores <> baseDependencies) <$> pack . UnqualComponentName.unUnqualComponentName . fst <*> snd) . GenericPackageDescription.condBenchmarks $ genericPackageDescription
   pure T.Package
     { packageName = packageName
     , packageBaseDependencies = baseDependencies
@@ -98,9 +98,9 @@ parseCabalFile fp = do
     }
 
 -- |Parse cabal files by file path, filter by explicit package names (if provided), and return the parsed packages.
-parseCabalFiles :: [FilePath] -> [Text] -> IO [T.Package]
-parseCabalFiles packageDirs packages = do
-  rawPackages <- traverse parseCabalFile packageDirs
+parseCabalFiles :: [FilePath] -> Set T.DependencyName -> [Text] -> IO [T.Package]
+parseCabalFiles packageDirs ignores packages = do
+  rawPackages <- traverse (flip parseCabalFile ignores) packageDirs
   if null packages
     then pure rawPackages
     else pure $ filter (flip elem packages . T.packageName) rawPackages

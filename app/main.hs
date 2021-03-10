@@ -5,6 +5,8 @@ import Control.Monad (unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (execStateT, put)
 import Data.Foldable (for_, traverse_)
+import Data.List (intercalate)
+import Data.Set (Set)
 import Data.Text (Text, pack, unpack)
 import Data.Traversable (for)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
@@ -20,11 +22,22 @@ import qualified Data.Prune.Types as T
 
 data Opts = Opts
   { optsProjectRoot :: FilePath
+  , optsDefaultIgnore :: Bool
+  , optsIgnoreList :: [T.DependencyName]
   , optsPackages :: [Text]
   }
 
+defaultIgnoreList :: Set T.DependencyName
+defaultIgnoreList = Set.fromList
+  [ T.DependencyName "base" -- ignore base because it's needed for info modules etc
+  , T.DependencyName "hspec" -- ignore because some packages use hspec discovery
+  ]
+
+showIgnoreList :: Set T.DependencyName -> String
+showIgnoreList = intercalate ", " . map (unpack . T.unDependencyName) . Set.toList
+
 parseArgs :: IO Opts
-parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Prune a Stack project's dependencies")
+parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Prune a Haskell project's dependencies")
   where
     parser = Opts
       <$> Opt.strOption (
@@ -33,6 +46,13 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
           <> Opt.help "Project root"
           <> Opt.value "."
           <> Opt.showDefault )
+      <*> Opt.switch (
+        Opt.long "default-ignore"
+          <> Opt.help ("Use the default ignore list (" <> showIgnoreList defaultIgnoreList <> ")") )
+      <*> many ( T.DependencyName . pack <$> Opt.strOption (
+        Opt.long "ignore"
+          <> Opt.metavar "IGNORE"
+          <> Opt.help "Dependencies(s) to ignore (overrides the default list)" ) )
       <*> many ( pack <$> Opt.strOption (
         Opt.long "package"
           <> Opt.metavar "PACKAGE"
@@ -42,13 +62,15 @@ main :: IO ()
 main = do
   Opts {..} <- parseArgs
 
+  let ignoreList = if optsDefaultIgnore then defaultIgnoreList else Set.fromList optsIgnoreList
+
   (buildSystem, packageDirs) <- parseStackYaml (optsProjectRoot </> "stack.yaml")
     <|> parseCabalProjectFile (optsProjectRoot </> "cabal.project")
     <|> findCabalFiles optsProjectRoot
   putStrLn $ "Using build system " <> show buildSystem
   when (buildSystem `elem` [T.CabalProject, T.Cabal]) $
     putStrLn $ "[WARNING] Cabal is not supported"
-  packages <- parseCabalFiles packageDirs optsPackages
+  packages <- parseCabalFiles packageDirs ignoreList optsPackages
 
   dependencyByModule <- liftIO $ getDependencyByModule buildSystem packages
   code <- flip execStateT ExitSuccess $ for_ packages $ \T.Package {..} -> do
