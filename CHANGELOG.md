@@ -1,6 +1,7 @@
 ## 0.6
 
 * Better support for Cabal
+* Support `.hs-boot` files
 
 ## 0.5
 

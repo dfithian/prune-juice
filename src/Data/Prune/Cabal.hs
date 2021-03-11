@@ -50,7 +50,7 @@ getSourceFiles fp mainMay buildInfo = do
   allFiles <- case null hsSourceDirs of
     True -> Set.filter (flip elem (takeFileName <$> maybeToList mainMay) . takeFileName) <$> listFilesRecursive fp
     False -> fmap mconcat . for hsSourceDirs $ \dir -> listFilesRecursive $ fp </> dir
-  pure $ Set.filter (\fp2 -> isExtensionOf "hs" fp2 || isExtensionOf "lhs" fp2) allFiles
+  pure $ Set.filter (\fp2 -> any ($ fp2) [isExtensionOf "hs", isExtensionOf "lhs", isExtensionOf "hs-boot"]) allFiles
 
 -- |Parse a library to compile.
 getLibraryCompilable :: FilePath -> Set T.DependencyName -> Text -> CondTree a [Dependency] Library -> IO T.Compilable

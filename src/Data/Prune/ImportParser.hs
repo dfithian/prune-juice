@@ -46,6 +46,7 @@ pkgName = some (alphaNumChar <|> char '-')
 
 oneImport :: Parser T.ModuleName
 oneImport = void (string "import") *> space
+  *> optional (between "{-#" "#-}" (space *> void (string "SOURCE") *> space) *> space)
   *> optional (void (string "qualified") *> space)
   *> optional (void (padded (quoted pkgName)) *> space)
   *> (T.ModuleName . pack <$> (symbol <* space))
