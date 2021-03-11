@@ -92,3 +92,11 @@ instance FromJSON StackYaml where
   parseJSON = withObject "StackYaml" $ \obj ->
     StackYaml
       <$> obj .: "packages"
+
+headMay :: [a] -> Maybe a
+headMay = \case
+  [] -> Nothing
+  x:_ -> Just x
+
+lastMay :: [a] -> Maybe a
+lastMay = headMay . reverse

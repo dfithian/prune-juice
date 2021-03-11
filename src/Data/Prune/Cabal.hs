@@ -88,15 +88,10 @@ getBenchmarkCompilable fp ignores name tree = do
   sourceFiles <- getSourceFiles fp mainMay . Benchmark.benchmarkBuildInfo . CondTree.condTreeData $ tree
   pure $ T.Compilable compilableName T.CompilableTypeBenchmark (getDependencyNames ignores $ CondTree.condTreeConstraints tree) sourceFiles
 
-headMay :: [a] -> Maybe a
-headMay = \case
-  [] -> Nothing
-  x:_ -> Just x
-
 -- |Parse a single cabal file.
 parseCabalFile :: FilePath -> Set T.DependencyName -> IO T.Package
 parseCabalFile fp ignores = do
-  cabalFile <- maybe (fail $ "No .cabal file found in " <> fp) pure . headMay . filter (isExtensionOf "cabal") =<< listDirectory fp
+  cabalFile <- maybe (fail $ "No .cabal file found in " <> fp) pure . T.headMay . filter (isExtensionOf "cabal") =<< listDirectory fp
   genericPackageDescription <- readGenericPackageDescription Verbosity.silent $ fp </> cabalFile
   let baseDependencies = case GenericPackageDescription.condLibrary genericPackageDescription of
         Just library -> getDependencyNames ignores $ CondTree.condTreeConstraints library
