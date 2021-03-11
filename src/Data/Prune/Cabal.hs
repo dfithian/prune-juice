@@ -4,7 +4,7 @@ import Prelude
 
 import Cabal.Project (prjPackages, readProject)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Logger (MonadLogger, logInfo)
+import Control.Monad.Logger (MonadLogger, logDebug)
 import Data.Maybe (maybeToList)
 import Data.Prune.File (listFilesRecursive)
 import Data.Set (Set)
@@ -125,7 +125,7 @@ parseCabalFiles :: (MonadIO m, MonadLogger m) => [FilePath] -> Set T.DependencyN
 parseCabalFiles packageDirs ignores packages = do
   rawPackages <- liftIO $ traverse (flip parseCabalFile ignores) packageDirs
   let toReturn = if null packages then rawPackages else filter (flip elem packages . T.packageName) rawPackages
-  $logInfo $ "Parsed packages " <> pack (show toReturn)
+  $logDebug $ "Parsed packages " <> pack (show toReturn)
   pure toReturn
 
 findCabalFiles :: FilePath -> IO (T.BuildSystem, [FilePath])

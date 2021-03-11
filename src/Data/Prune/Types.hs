@@ -26,6 +26,27 @@ parseBuildSystem = \case
 allBuildSystems :: [BuildSystem]
 allBuildSystems = [minBound..maxBound]
 
+data Verbosity = Silent | Error | Info | Debug
+  deriving (Eq, Ord, Bounded, Enum)
+
+instance Show Verbosity where
+  show = \case
+    Silent -> "silent"
+    Error -> "error"
+    Info -> "info"
+    Debug -> "debug"
+
+parseVerbosity :: String -> Maybe Verbosity
+parseVerbosity = \case
+  "silent" -> Just Silent
+  "error" -> Just Error
+  "info" -> Just Info
+  "debug" -> Just Debug
+  _ -> Nothing
+
+allVerbosities :: [Verbosity]
+allVerbosities = [minBound..maxBound]
+
 -- |The type of the thing to compile.
 data CompilableType
   = CompilableTypeLibrary

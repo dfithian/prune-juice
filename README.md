@@ -14,7 +14,8 @@ $ stack install
 $ prune-juice --help
 Usage: prune-juice [--project-root PROJECT_ROOT] [--no-default-ignore]
                    [--no-ignore-self] [--extra-ignore EXTRA_IGNORE]
-                   [--package PACKAGE] [--verbose] [--build-system BUILD_SYSTEM]
+                   [--package PACKAGE] [--verbosity VERBOSITY]
+                   [--build-system BUILD_SYSTEM]
   Prune a Haskell project's dependencies
 
 Available options:
@@ -29,7 +30,8 @@ Available options:
                            Dependencies(s) to ignore in addition to the default
                            ignore list
   --package PACKAGE        Package name(s)
-  --verbose                Turn on verbose logging
+  --verbosity VERBOSITY    Set the verbosity level (one of
+                           [silent,error,info,debug]) (default: error)
   --build-system BUILD_SYSTEM
                            Build system to use instead of inference (one of
                            [stack,cabal-project,cabal])

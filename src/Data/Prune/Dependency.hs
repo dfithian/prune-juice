@@ -4,6 +4,8 @@ module Data.Prune.Dependency where
 import Prelude hiding (unwords, words)
 
 import Cabal.Config (cfgStoreDir, readConfig)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Logger (MonadLogger, logError)
 import Data.Functor.Identity (runIdentity)
 import Data.List (intercalate)
 import Data.Map (Map)
@@ -19,11 +21,21 @@ import qualified Data.Set as Set
 import Data.Prune.ImportParser (parseDependencyName, parseExposedModules)
 import qualified Data.Prune.Types as T
 
-parsePkg :: Text -> IO (T.DependencyName, Set T.ModuleName)
+parsePkg :: (MonadIO m, MonadLogger m) => Text -> m (Maybe (T.DependencyName, Set T.ModuleName))
 parsePkg s = do
-  dependencyName <- parseDependencyName . unpack . unwords . dropWhile (not . (==) "name:") . words . strip $ s
-  moduleNames <- parseExposedModules . unpack . unwords . dropWhile (not . (==) "exposed-modules:") . words . strip $ s
-  pure (dependencyName, moduleNames)
+  let dependencyNameInput = unpack . unwords . dropWhile (not . (==) "name:") . words . strip $ s
+      moduleNamesInput = unpack . unwords . dropWhile (not . (==) "exposed-modules:") . words . strip $ s
+  dependencyNameMay <- case parseDependencyName dependencyNameInput of
+    Left err -> do
+      $logError $ "Failed to parse dependency name due to " <> pack (show err) <> "; original input " <> pack dependencyNameInput
+      pure Nothing
+    Right x -> pure x
+  moduleNames <- case parseExposedModules moduleNamesInput of
+    Left err -> do
+      $logError $ "Failed to parse module names due to " <> pack (show err) <> "; original input " <> pack moduleNamesInput
+      pure mempty
+    Right x -> pure x
+  pure $ (, moduleNames) <$> dependencyNameMay
 
 getCabalRawGhcPkgs :: FilePath -> IO String
 getCabalRawGhcPkgs projectRoot = do
@@ -46,16 +58,17 @@ getStackRawGhcPkgs = readProcess "stack" ["exec", "ghc-pkg", "dump"] ""
 
 -- |For the dependencies listed in the specified packages, load `ghc-pkg` and inspect the `exposed-modules` field.
 -- Return a map of module to dependency name.
-getDependencyByModule :: FilePath -> T.BuildSystem -> [T.Package] -> IO (Map T.ModuleName (Set T.DependencyName))
+getDependencyByModule :: (MonadIO m, MonadLogger m) => FilePath -> T.BuildSystem -> [T.Package] -> m (Map T.ModuleName (Set T.DependencyName))
 getDependencyByModule projectRoot buildSystem packages = do
   let allDependencies = foldMap T.packageBaseDependencies packages <> foldMap T.compilableDependencies (foldMap T.packageCompilables packages)
   rawPkgs <- case buildSystem of
-    T.Stack -> getStackRawGhcPkgs
-    T.CabalProject -> getCabalRawGhcPkgs projectRoot
-    T.Cabal -> getCabalRawGhcPkgs projectRoot
+    T.Stack -> liftIO getStackRawGhcPkgs
+    T.CabalProject -> liftIO $ getCabalRawGhcPkgs projectRoot
+    T.Cabal -> liftIO $ getCabalRawGhcPkgs projectRoot
   allPkgs <- traverse parsePkg . splitOn "\n---\n" . pack $ rawPkgs
   pure
     . foldr (\(moduleName, dependencyNames) acc -> Map.insertWith (<>) moduleName dependencyNames acc) mempty
     . concatMap (\(dependencyName, moduleNames) -> (, Set.singleton dependencyName) <$> Set.toList moduleNames)
     . filter (flip Set.member allDependencies . fst)
+    . catMaybes
     $ allPkgs

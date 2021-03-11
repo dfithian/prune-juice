@@ -1,9 +1,11 @@
 import Prelude
 
 import Control.Applicative ((<|>), many, optional)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Logger (defaultOutput, logInfo, runLoggingT)
+import Control.Monad.Logger
+  ( LogLevel(LevelDebug, LevelError, LevelInfo), defaultOutput, logInfo, runLoggingT
+  )
 import Control.Monad.State (execStateT, put)
 import Data.Foldable (for_, traverse_)
 import Data.Set (Set)
@@ -27,7 +29,7 @@ data Opts = Opts
   , optsNoIgnoreSelf :: Bool
   , optsExtraIgnoreList :: [T.DependencyName]
   , optsPackages :: [Text]
-  , optsVerbose :: Bool
+  , optsVerbosity :: T.Verbosity
   , optsBuildSystem :: Maybe T.BuildSystem
   }
 
@@ -37,6 +39,13 @@ defaultIgnoreList = Set.fromList
   , T.DependencyName "hspec" -- ignore because some packages use hspec discovery
   , T.DependencyName "tasty" -- ignore because some packages use tasty discovery
   ]
+
+verbosityToLogLevel :: T.Verbosity -> Maybe LogLevel
+verbosityToLogLevel = \case
+  T.Silent -> Nothing
+  T.Error -> Just LevelError
+  T.Info -> Just LevelInfo
+  T.Debug -> Just LevelDebug
 
 parseArgs :: IO Opts
 parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Prune a Haskell project's dependencies")
@@ -62,9 +71,12 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
         Opt.long "package"
           <> Opt.metavar "PACKAGE"
           <> Opt.help "Package name(s)" ) )
-      <*> Opt.switch (
-        Opt.long "verbose"
-          <> Opt.help "Turn on verbose logging" )
+      <*> Opt.option (Opt.maybeReader T.parseVerbosity) (
+        Opt.long "verbosity"
+          <> Opt.metavar "VERBOSITY"
+          <> Opt.help ("Set the verbosity level (one of " <> show T.allVerbosities <> ")")
+          <> Opt.value T.Error
+          <> Opt.showDefault )
       <*> optional ( Opt.option (Opt.maybeReader T.parseBuildSystem) (
         Opt.long "build-system"
           <> Opt.metavar "BUILD_SYSTEM"
@@ -75,9 +87,9 @@ main = do
   Opts {..} <- parseArgs
 
   let ignoreList = Set.fromList optsExtraIgnoreList <> if optsNoDefaultIgnore then mempty else defaultIgnoreList
-      logger ma = runLoggingT ma $ case optsVerbose of
-        True -> defaultOutput stdout
-        False -> \_ _ _ _ -> pure ()
+      logger ma = runLoggingT ma $ case verbosityToLogLevel optsVerbosity of
+        Nothing -> \_ _ _ _ -> pure ()
+        Just level -> \loc src lvl str -> when (lvl >= level) $ defaultOutput stdout loc src lvl str
 
   (buildSystem, packageDirs) <- case optsBuildSystem of
     Just T.Stack -> parseStackYaml (optsProjectRoot </> "stack.yaml")
@@ -91,7 +103,7 @@ main = do
     $logInfo $ "Using ignore list " <> pack (show (Set.toList ignoreList))
     packages <- parseCabalFiles packageDirs ignoreList optsPackages
 
-    dependencyByModule <- liftIO $ getDependencyByModule optsProjectRoot buildSystem packages
+    dependencyByModule <- getDependencyByModule optsProjectRoot buildSystem packages
     flip execStateT ExitSuccess $ for_ packages $ \T.Package {..} -> do
       let addSelf = if optsNoIgnoreSelf then id else Set.insert (T.DependencyName packageName)
       baseUsedDependencies <- fmap mconcat . for packageCompilables $ \compilable@T.Compilable {..} -> do
@@ -108,4 +120,5 @@ main = do
         liftIO . putStrLn . unpack $ "Some unused base dependencies for package " <> packageName
         liftIO . traverse_ (putStrLn . unpack . ("  " <>) . T.unDependencyName) $ Set.toList baseUnusedDependencies
         put $ ExitFailure 1
+
   exitWith code

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 38627fe6152f0f3351d3f174016d98a92ff73f7399e81527a5ef353dbf112e39
+-- hash: 828dc8956020f781817581e615369415a78c730e73e7b9843e03eba766c0e2a8
 
 name:           prune-juice
 version:        0.6
@@ -20,7 +20,8 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     stack.yaml
-    package.yaml
+    cabal.project
+    prune-juice.cabal
 
 source-repository head
   type: git

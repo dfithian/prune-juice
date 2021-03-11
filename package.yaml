@@ -66,7 +66,8 @@ dependencies:
 
 extra-source-files:
   - stack.yaml
-  - package.yaml
+  - cabal.project
+  - prune-juice.cabal
 
 library:
   source-dirs:

@@ -4,9 +4,10 @@ module Data.Prune.ImportParser where
 import Prelude
 
 import Control.Applicative ((<|>), optional, some)
+import Control.Arrow (left)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Logger (MonadLogger, logInfo)
+import Control.Monad.Logger (MonadLogger, logDebug, logError)
 import Data.List (isPrefixOf)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
@@ -60,21 +61,24 @@ exposedModules = void (string "exposed-modules:") *> space
   *> (Set.fromList <$> some (T.ModuleName . pack <$> symbol))
 
 -- |Parse a Haskell source file's imports.
-parseFileImports :: FilePath -> IO (Set T.ModuleName)
+parseFileImports :: FilePath -> IO (Either String (Set T.ModuleName))
 parseFileImports fp = do
-  either (fail . ("Failed to parse imports due to " <>) . show) (pure . Set.fromList) . traverse (parse oneImport fp) . filter (isPrefixOf "import ") . lines
-    =<< readFile fp
+  left show . fmap Set.fromList . traverse (parse oneImport fp) . filter (isPrefixOf "import ") . lines
+    <$> readFile fp
 
 -- |Parse name from the `ghc-pkg` field description.
-parseDependencyName :: String -> IO T.DependencyName
-parseDependencyName input = either (\e -> fail $ "Failed to parse name due to " <> show e <> " original input " <> input) pure $ parse dependencyName "" input
+parseDependencyName :: String -> Either String (Maybe T.DependencyName)
+parseDependencyName input =
+  if null input
+    then Right Nothing
+    else left show . fmap Just . parse dependencyName "" $ input
 
 -- |Parse exposed modules from the `ghc-pkg` field description.
-parseExposedModules :: String -> IO (Set T.ModuleName)
+parseExposedModules :: String -> Either String (Set T.ModuleName)
 parseExposedModules input =
   if null input
     then pure mempty
-    else either (\e -> fail $ "Failed to parse exposed modules due to " <> show e <> " original input " <> input) pure $ parse exposedModules "" input
+    else left show $ parse exposedModules "" input
 
 -- |Get the dependencies used by a list of modules imported by a Haskell source file.
 getUsedDependencies :: Map T.ModuleName (Set T.DependencyName) -> Set T.ModuleName -> Set T.DependencyName
@@ -86,8 +90,12 @@ getUsedDependencies dependencyByModule = foldr go mempty . Set.toList
 -- dependencies each of those files use, and (3) smooshing all the dependencies together to return.
 getCompilableUsedDependencies :: (MonadIO m, MonadLogger m) => Map T.ModuleName (Set T.DependencyName) -> T.Compilable -> m (Set T.DependencyName)
 getCompilableUsedDependencies dependencyByModule T.Compilable {..} = fmap mconcat . for (Set.toList compilableFiles) $ \fp -> do
-  moduleNames <- liftIO $ parseFileImports fp
-  $logInfo $ "Got module names for " <> pack fp <> ": " <> pack (show moduleNames)
-  let usedDependencies = getUsedDependencies dependencyByModule moduleNames
-  $logInfo $ "Got dependency names for " <> pack fp <> ": " <> pack (show usedDependencies)
-  pure usedDependencies
+  liftIO (parseFileImports fp) >>= \case
+    Left err -> do
+      $logError $ "Failed to parse imports for " <> pack fp <> " due to " <> pack (show err)
+      pure mempty
+    Right moduleNames -> do
+      $logDebug $ "Got module names for " <> pack fp <> ": " <> pack (show moduleNames)
+      let usedDependencies = getUsedDependencies dependencyByModule moduleNames
+      $logDebug $ "Got dependency names for " <> pack fp <> ": " <> pack (show usedDependencies)
+      pure usedDependencies
