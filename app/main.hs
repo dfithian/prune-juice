@@ -3,7 +3,7 @@ import Prelude
 import Control.Applicative ((<|>), many, optional)
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Logger (defaultOutput, runLoggingT)
+import Control.Monad.Logger (defaultOutput, logInfo, runLoggingT)
 import Control.Monad.State (execStateT, put)
 import Data.Foldable (for_, traverse_)
 import Data.Set (Set)
@@ -86,9 +86,9 @@ main = do
     Nothing -> parseStackYaml (optsProjectRoot </> "stack.yaml")
       <|> parseCabalProjectFile (optsProjectRoot </> "cabal.project")
       <|> findCabalFiles optsProjectRoot
-  putStrLn $ "Using build system " <> show buildSystem
-  putStrLn $ "Using ignore list " <> show (Set.toList ignoreList)
   code <- logger $ do
+    $logInfo $ "Using build system " <> pack (show buildSystem)
+    $logInfo $ "Using ignore list " <> pack (show (Set.toList ignoreList))
     packages <- parseCabalFiles packageDirs ignoreList optsPackages
 
     dependencyByModule <- liftIO $ getDependencyByModule buildSystem packages
