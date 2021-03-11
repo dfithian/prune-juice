@@ -5,9 +5,12 @@ import Prelude hiding (unwords, words)
 
 import Cabal.Config (cfgStoreDir, readConfig)
 import Data.Functor.Identity (runIdentity)
+import Data.List (intercalate)
 import Data.Map (Map)
+import Data.Maybe (catMaybes)
 import Data.Set (Set)
 import Data.Text (Text, pack, splitOn, strip, unpack, unwords, words)
+import System.Directory (doesDirectoryExist)
 import System.FilePath.Posix ((</>))
 import System.Process (readProcess)
 import qualified Data.Map as Map
@@ -22,27 +25,34 @@ parsePkg s = do
   moduleNames <- parseExposedModules . unpack . unwords . dropWhile (not . (==) "exposed-modules:") . words . strip $ s
   pure (dependencyName, moduleNames)
 
-getCabalRawGhcPkgs :: IO String
-getCabalRawGhcPkgs = do
+getCabalRawGhcPkgs :: FilePath -> IO String
+getCabalRawGhcPkgs projectRoot = do
   cabalConfig <- readConfig
-  ghcVersion <- unpack . strip . pack <$> readProcess "cabal" ["v2-exec", "ghc", "--", "--numeric-version"] ""
-  let pkgDbDir = (\dir -> dir </> ("ghc-" <> ghcVersion) </> "package.db") . runIdentity . cfgStoreDir $ cabalConfig
+  rawGhcVersion <- readProcess "cabal" ["v2-exec", "ghc", "--", "--numeric-version"] ""
+  ghcVersion <- case fmap (unpack . strip) . T.lastMay . words . pack $ rawGhcVersion of
+    Nothing -> fail $ "Failed to parse raw GHC version for Cabal from " <> rawGhcVersion
+    Just v -> pure v
+  let cabalPkgDbDir = (\dir -> dir </> ("ghc-" <> ghcVersion) </> "package.db") . runIdentity . cfgStoreDir $ cabalConfig
+      localPkgDbDir = projectRoot </> "dist-newstyle" </> "packagedb" </> ("ghc-" <> ghcVersion)
   defaultPkgs <- readProcess "cabal" ["v2-exec", "ghc-pkg", "dump"] ""
-  cabalPkgs <- readProcess "cabal" ["v2-exec", "ghc-pkg", "dump", "--", "--package-db", pkgDbDir] ""
-  pure $ defaultPkgs <> "\n---\n" <> cabalPkgs
+  cabalPkgs <- readProcess "cabal" ["v2-exec", "ghc-pkg", "dump", "--", "--package-db", cabalPkgDbDir] ""
+  localPkgs <- doesDirectoryExist localPkgDbDir >>= \case
+    True -> Just <$> readProcess "cabal" ["v2-exec", "ghc-pkg", "dump", "--", "--package-db", localPkgDbDir] ""
+    False -> pure Nothing
+  pure . intercalate "\n---\n" . catMaybes $ [Just defaultPkgs, Just cabalPkgs, localPkgs]
 
 getStackRawGhcPkgs :: IO String
 getStackRawGhcPkgs = readProcess "stack" ["exec", "ghc-pkg", "dump"] ""
 
 -- |For the dependencies listed in the specified packages, load `ghc-pkg` and inspect the `exposed-modules` field.
 -- Return a map of module to dependency name.
-getDependencyByModule :: T.BuildSystem -> [T.Package] -> IO (Map T.ModuleName (Set T.DependencyName))
-getDependencyByModule buildSystem packages = do
+getDependencyByModule :: FilePath -> T.BuildSystem -> [T.Package] -> IO (Map T.ModuleName (Set T.DependencyName))
+getDependencyByModule projectRoot buildSystem packages = do
   let allDependencies = foldMap T.packageBaseDependencies packages <> foldMap T.compilableDependencies (foldMap T.packageCompilables packages)
   rawPkgs <- case buildSystem of
     T.Stack -> getStackRawGhcPkgs
-    T.CabalProject -> getCabalRawGhcPkgs
-    T.Cabal -> getCabalRawGhcPkgs
+    T.CabalProject -> getCabalRawGhcPkgs projectRoot
+    T.Cabal -> getCabalRawGhcPkgs projectRoot
   allPkgs <- traverse parsePkg . splitOn "\n---\n" . pack $ rawPkgs
   pure
     . foldr (\(moduleName, dependencyNames) acc -> Map.insertWith (<>) moduleName dependencyNames acc) mempty

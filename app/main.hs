@@ -91,7 +91,7 @@ main = do
     $logInfo $ "Using ignore list " <> pack (show (Set.toList ignoreList))
     packages <- parseCabalFiles packageDirs ignoreList optsPackages
 
-    dependencyByModule <- liftIO $ getDependencyByModule buildSystem packages
+    dependencyByModule <- liftIO $ getDependencyByModule optsProjectRoot buildSystem packages
     flip execStateT ExitSuccess $ for_ packages $ \T.Package {..} -> do
       let addSelf = if optsNoIgnoreSelf then id else Set.insert (T.DependencyName packageName)
       baseUsedDependencies <- fmap mconcat . for packageCompilables $ \compilable@T.Compilable {..} -> do
