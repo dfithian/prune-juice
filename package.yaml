@@ -68,6 +68,7 @@ extra-source-files:
   - stack.yaml
   - cabal.project
   - prune-juice.cabal
+  - test/fixtures/*
 
 library:
   source-dirs:
@@ -79,6 +80,7 @@ tests:
     source-dirs:
       - test
     dependencies:
+      - file-embed
       - file-path-th
       - hspec
 

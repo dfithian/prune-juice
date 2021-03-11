@@ -21,7 +21,7 @@ import qualified Data.Set as Set
 import Data.Prune.ImportParser (parseDependencyName, parseExposedModules)
 import qualified Data.Prune.Types as T
 
-parsePkg :: (MonadIO m, MonadLogger m) => Text -> m (Maybe (T.DependencyName, Set T.ModuleName))
+parsePkg :: (MonadLogger m) => Text -> m (Maybe (T.DependencyName, Set T.ModuleName))
 parsePkg s = do
   let dependencyNameInput = unpack . unwords . dropWhile (not . (==) "name:") . words . strip $ s
       moduleNamesInput = unpack . unwords . dropWhile (not . (==) "exposed-modules:") . words . strip $ s

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 828dc8956020f781817581e615369415a78c730e73e7b9843e03eba766c0e2a8
+-- hash: 93117bc7273e5f6aa8627881ccd3fa5e2d539f8e2ee55d15800a5a118b3f1346
 
 name:           prune-juice
 version:        0.6
@@ -22,6 +22,7 @@ extra-source-files:
     stack.yaml
     cabal.project
     prune-juice.cabal
+    test/fixtures/ghc-pkg.txt
 
 source-repository head
   type: git
@@ -90,6 +91,7 @@ test-suite test
   main-is: main.hs
   other-modules:
       Data.Prune.CabalSpec
+      Data.Prune.DependencySpec
       Data.Prune.ImportParserSpec
       Paths_prune_juice
   hs-source-dirs:
@@ -104,6 +106,7 @@ test-suite test
     , cabal-install-parsers
     , containers
     , directory
+    , file-embed
     , file-path-th
     , filepath
     , hspec

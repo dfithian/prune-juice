@@ -16,7 +16,7 @@ import Data.Text (pack)
 import Data.Traversable (for)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, between, oneOf, parse)
-import Text.Megaparsec.Char (alphaNumChar, char, space, string, symbolChar)
+import Text.Megaparsec.Char (alphaNumChar, char, space, string, symbolChar, upperChar)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -39,8 +39,14 @@ operator = concat <$> sequence [ptoken "(", symbolChars, ptoken ")"]
 symbolChars :: Parser String
 symbolChars = some (oneOf ("!#$%&*+./<=>?@^|-~:\\" :: String)) <|> some symbolChar
 
+symbol' :: Parser String
+symbol' = operator <|> some (alphaNumChar <|> oneOf ("._'" :: String))
+
 symbol :: Parser String
-symbol = padded $ operator <|> some (alphaNumChar <|> oneOf ("._'" :: String))
+symbol = padded symbol'
+
+moduleName :: Parser String
+moduleName = padded $ fmap mconcat $ some $ fmap mconcat $ sequence [(:[]) <$> upperChar, symbol']
 
 pkgName :: Parser String
 pkgName = some (alphaNumChar <|> char '-')
@@ -58,7 +64,7 @@ dependencyName = void (string "name:") *> space
 
 exposedModules :: Parser (Set T.ModuleName)
 exposedModules = void (string "exposed-modules:") *> space
-  *> (Set.fromList <$> some (T.ModuleName . pack <$> symbol))
+  *> (Set.fromList <$> some (T.ModuleName . pack <$> moduleName))
 
 -- |Parse a Haskell source file's imports.
 parseFileImports :: FilePath -> IO (Either String (Set T.ModuleName))
