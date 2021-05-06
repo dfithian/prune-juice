@@ -1,4 +1,6 @@
 let
+  ghcVersion = "ghc8104";
+
   # Read in the Niv sources
   sources = import ./nix/sources.nix {};
   # If ./nix/sources.nix file is not found run:
@@ -10,6 +12,14 @@ let
   # If haskellNix is not found run:
   #   niv add input-output-hk/haskell.nix -n haskellNix
 
+  hls-wrapper = import sources.hls-wrapper {
+    ghcVersion = ghcVersion;
+  };
+
+  tools = {
+    hls = hls-wrapper.hls-renamed;
+  };
+
   # Import nixpkgs and pass the haskell.nix provided nixpkgsArgs
   pkgs = import
     # haskell.nix provides access to the nixpkgs pins which are used by our CI,
@@ -19,13 +29,18 @@ let
     # These arguments passed to nixpkgs, include some patches and also
     # the haskell.nix functionality itself as an overlay.
     haskellNix.nixpkgsArgs;
-in pkgs.haskell-nix.project {
-  projectFileName = "cabal.project";
-  # 'cleanGit' cleans a source directory based on the files known by git
-  src = pkgs.haskell-nix.haskellLib.cleanGit {
-    name = "haskell-nix-project";
-    src = ./.;
+
+  project = pkgs.haskell-nix.project {
+    projectFileName = "cabal.project";
+    # 'cleanGit' cleans a source directory based on the files known by git
+    src = pkgs.haskell-nix.haskellLib.cleanGit {
+      name = "haskell-nix-project";
+      src = ./.;
+    };
+    # Specify the GHC version to use.
+    compiler-nix-name = ghcVersion; # Not required for `stack.yaml` based projects.
   };
-  # Specify the GHC version to use.
-  compiler-nix-name = "ghc8102"; # Not required for `stack.yaml` based projects.
+in {
+  inherit project;
+  inherit tools;
 }

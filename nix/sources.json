@@ -34,5 +34,17 @@
         "type": "tarball",
         "url": "https://github.com/NixOS/nixpkgs/archive/1db42b7fe3878f3f5f7a4f2dc210772fd080e205.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "hls-wrapper": {
+        "branch": "master",
+        "description": "Haskell Language Server Wrapper",
+        "homepage": "",
+        "owner": "shajra",
+        "repo": "nix-haskell-hls",
+        "rev": "7f5dad7d3569467cd7f41429566e59f0cbf1dc40",
+        "sha256": "02fb8x5g7kc8rklb6d937xglrhkj5y6f0vlvpzalqhhfcyxp1l3q",
+        "type": "tarball",
+        "url": "https://github.com/shajra/nix-haskell-hls/archive/7f5dad7d3569467cd7f41429566e59f0cbf1dc40.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
