@@ -41,6 +41,5 @@ let
     compiler-nix-name = config.ghcVersion; # Not required for `stack.yaml` based projects.
   };
 in {
-  inherit project;
-  inherit tools;
+  inherit project tools;
 }
