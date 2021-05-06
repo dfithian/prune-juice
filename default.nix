@@ -1,5 +1,5 @@
 let
-  ghcVersion = "ghc8104";
+  config = import ./config.nix;
 
   # Read in the Niv sources
   sources = import ./nix/sources.nix {};
@@ -13,7 +13,7 @@ let
   #   niv add input-output-hk/haskell.nix -n haskellNix
 
   hls-wrapper = import sources.hls-wrapper {
-    ghcVersion = ghcVersion;
+    ghcVersion = config.ghcVersion;
   };
 
   tools = {
@@ -38,7 +38,7 @@ let
       src = ./.;
     };
     # Specify the GHC version to use.
-    compiler-nix-name = ghcVersion; # Not required for `stack.yaml` based projects.
+    compiler-nix-name = config.ghcVersion; # Not required for `stack.yaml` based projects.
   };
 in {
   inherit project;

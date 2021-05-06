@@ -1,9 +1,11 @@
 let
   project = import ./.;
+  config = import ./config.nix;
 in
   project.project.shellFor {
     tools = {
-      cabal = "3.2.0.0";
+      cabal = config.cabalVersion;
+      ghcid = config.ghcidVersion;
     };
     buildInputs = [
       project.tools.hls
