@@ -1,1 +1,2 @@
 packages: ./*.cabal
+constraints: cabal-install-parsers == 0.3.0.1
