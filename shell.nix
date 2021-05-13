@@ -6,6 +6,8 @@ in
     tools = {
       cabal = config.cabalVersion;
       ghcid = config.ghcidVersion;
+      hasktags = config.hasktagsVersion;
+      haskdogs = config.haskdogsVersion;
     };
     buildInputs = [
       project.tools.hls
