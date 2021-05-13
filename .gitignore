@@ -3,3 +3,4 @@ stack.yaml.lock
 dist-newstyle
 cabal.project.local
 result
+tags
