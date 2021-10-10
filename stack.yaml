@@ -1,5 +1,6 @@
-resolver: lts-17.5
+resolver: lts-18.13
 packages:
   - .
 extra-deps:
 - cabal-install-parsers-0.3.0.1
+- base16-bytestring-0.1.1.7@sha256:0021256a9628971c08da95cb8f4d0d72192f3bb8a7b30b55c080562d17c43dd3,2231
