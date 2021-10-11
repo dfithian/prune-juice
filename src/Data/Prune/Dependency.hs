@@ -3,6 +3,7 @@ module Data.Prune.Dependency (getDependencyByModule, parsePkg) where
 
 import Prelude hiding (words)
 
+import Cabal.Config (cfgStoreDir, readConfig)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Logger (MonadLogger, logError)
 import Data.Functor.Identity (runIdentity)
@@ -12,6 +13,9 @@ import Data.Maybe (catMaybes)
 import Data.Set (Set)
 import Data.Text (Text, pack, splitOn, strip, unpack, words)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import Distribution.InstalledPackageInfo (InstalledPackageInfo(..), parseInstalledPackageInfo, ExposedModule (..))
+import Distribution.ModuleName (components)
+import Distribution.Package (PackageIdentifier(..), unPackageName)
 import System.Directory (doesDirectoryExist)
 import System.FilePath.Posix ((</>))
 import System.Process (readProcess)
@@ -20,10 +24,6 @@ import qualified Data.Set as Set
 
 import qualified Data.Prune.Types as T
 
-import Cabal.Config (cfgStoreDir, readConfig)
-import Distribution.InstalledPackageInfo (InstalledPackageInfo(..), parseInstalledPackageInfo, ExposedModule (..))
-import Distribution.ModuleName (components)
-import Distribution.Package (PackageIdentifier(..), unPackageName)
 
 parsePkg :: (MonadLogger m) => Text -> m (Maybe (T.DependencyName, Set T.ModuleName))
 parsePkg s = case parseInstalledPackageInfo input of
