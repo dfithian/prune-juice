@@ -1,9 +1,8 @@
 -- |Load dependencies for a project using `ghc-pkg`.
 module Data.Prune.Dependency where
 
-import Prelude hiding (unwords, words)
+import Prelude hiding (words)
 
-import Cabal.Config (cfgStoreDir, readConfig)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Logger (MonadLogger, logError)
 import Data.Functor.Identity (runIdentity)
@@ -11,31 +10,33 @@ import Data.List (intercalate)
 import Data.Map (Map)
 import Data.Maybe (catMaybes)
 import Data.Set (Set)
-import Data.Text (Text, pack, splitOn, strip, unpack, unwords, words)
+import Data.Text (Text, pack, splitOn, strip, unpack, words)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import System.Directory (doesDirectoryExist)
 import System.FilePath.Posix ((</>))
 import System.Process (readProcess)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Data.Prune.ImportParser (parseDependencyName, parseExposedModules)
 import qualified Data.Prune.Types as T
 
+import Cabal.Config (cfgStoreDir, readConfig)
+import Distribution.InstalledPackageInfo (InstalledPackageInfo(..), parseInstalledPackageInfo, ExposedModule (..))
+import Distribution.ModuleName (components)
+import Distribution.Package (PackageIdentifier(..), unPackageName)
+
 parsePkg :: (MonadLogger m) => Text -> m (Maybe (T.DependencyName, Set T.ModuleName))
-parsePkg s = do
-  let dependencyNameInput = unpack . unwords . dropWhile (not . (==) "name:") . words . strip $ s
-      moduleNamesInput = unpack . unwords . dropWhile (not . (==) "exposed-modules:") . words . strip $ s
-  dependencyNameMay <- case parseDependencyName dependencyNameInput of
-    Left err -> do
-      $logError $ "Failed to parse dependency name due to " <> pack (show err) <> "; original input " <> pack dependencyNameInput
-      pure Nothing
-    Right x -> pure x
-  moduleNames <- case parseExposedModules moduleNamesInput of
-    Left err -> do
-      $logError $ "Failed to parse module names due to " <> pack (show err) <> "; original input " <> pack moduleNamesInput
-      pure mempty
-    Right x -> pure x
-  pure $ (, moduleNames) <$> dependencyNameMay
+parsePkg s = case parseInstalledPackageInfo input of
+  Left err -> do
+    $logError $ "Failed to parse package due to " <> pack (show err) <> "; original input " <> decodeUtf8 input
+    pure Nothing
+  Right (_, InstalledPackageInfo{sourcePackageId = PackageIdentifier{pkgName}, exposedModules}) ->
+    pure $ Just (
+      T.DependencyName $ pack $ unPackageName pkgName,
+      Set.fromList $ T.ModuleName . pack . intercalate "." . components . exposedName <$> exposedModules
+    )
+  where
+    input = encodeUtf8 $ strip s
 
 getCabalRawGhcPkgs :: FilePath -> IO String
 getCabalRawGhcPkgs projectRoot = do
