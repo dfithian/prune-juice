@@ -30,11 +30,13 @@ parsePkg s = case parseInstalledPackageInfo input of
   Left err -> do
     $logError $ "Failed to parse package due to " <> pack (show err) <> "; original input " <> decodeUtf8 input
     pure Nothing
-  Right (_, InstalledPackageInfo{sourcePackageId = PackageIdentifier{pkgName}, exposedModules}) ->
+  Right (_, InstalledPackageInfo{sourcePackageId = PackageIdentifier{pkgName}, exposedModules})
+        | not $ null $ unPackageName pkgName ->
     pure $ Just (
       T.DependencyName $ pack $ unPackageName pkgName,
       Set.fromList $ T.ModuleName . pack . intercalate "." . components . exposedName <$> exposedModules
     )
+  Right _ -> pure Nothing
   where
     input = encodeUtf8 $ strip s
 
