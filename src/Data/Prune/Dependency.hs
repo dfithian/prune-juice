@@ -1,5 +1,5 @@
 -- |Load dependencies for a project using `ghc-pkg`.
-module Data.Prune.Dependency where
+module Data.Prune.Dependency (getDependencyByModule, parsePkg) where
 
 import Prelude hiding (words)
 

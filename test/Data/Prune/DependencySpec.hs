@@ -1,4 +1,4 @@
-module Data.Prune.DependencySpec where
+module Data.Prune.DependencySpec (spec) where
 
 import Prelude
 

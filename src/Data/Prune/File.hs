@@ -1,4 +1,4 @@
-module Data.Prune.File where
+module Data.Prune.File (listFilesRecursive) where
 
 import Prelude
 

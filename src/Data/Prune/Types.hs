@@ -1,5 +1,21 @@
 -- |Types for pruning.
-module Data.Prune.Types where
+module Data.Prune.Types (
+  DependencyName(..),
+  ModuleName(..),
+  Compilable(..),
+  CompilableName(..),
+  CompilableType(..),
+  Package(..),
+  BuildSystem(..),
+  parseBuildSystem,
+  allBuildSystems,
+  StackYaml(..),
+  Verbosity(..),
+  parseVerbosity,
+  allVerbosities,
+  headMay,
+  lastMay,
+) where
 
 import Prelude
 

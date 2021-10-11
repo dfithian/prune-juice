@@ -1,4 +1,4 @@
-module Data.Prune.CabalSpec where
+module Data.Prune.CabalSpec (spec) where
 
 import Prelude
 

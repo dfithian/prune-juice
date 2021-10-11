@@ -1,4 +1,4 @@
-module Data.Prune.Stack where
+module Data.Prune.Stack (parseStackYaml) where
 
 import Prelude
 

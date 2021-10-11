@@ -1,4 +1,9 @@
-module Data.Prune.Cabal where
+module Data.Prune.Cabal (
+  findCabalFiles,
+  parseCabalFile,
+  parseCabalFiles,
+  parseCabalProjectFile,
+) where
 
 import Prelude
 

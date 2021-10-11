@@ -1,3 +1,5 @@
+module Main (main) where
+
 import Prelude
 
 import Control.Applicative ((<|>), many, optional)
