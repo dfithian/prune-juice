@@ -5,8 +5,13 @@ import Prelude
 
 import Data.Aeson ((.:), FromJSON, parseJSON, withObject)
 import Data.Set (Set)
-import Data.Text (Text, unpack)
+import Data.Text (Text, pack, unpack)
+import Distribution.Types.Dependency (Dependency)
 import Distribution.Types.GenericPackageDescription (GenericPackageDescription)
+import Distribution.Types.UnqualComponentName (UnqualComponentName)
+import qualified Distribution.Types.Dependency as Dependency
+import qualified Distribution.Types.PackageName as PackageName
+import qualified Distribution.Types.UnqualComponentName as UnqualComponentName
 
 data BuildSystem = Stack | CabalProject | Cabal
   deriving (Eq, Ord, Bounded, Enum)
@@ -117,6 +122,12 @@ instance FromJSON StackYaml where
   parseJSON = withObject "StackYaml" $ \obj ->
     StackYaml
       <$> obj .: "packages"
+
+mkDependencyName :: Dependency -> DependencyName
+mkDependencyName = DependencyName . pack . PackageName.unPackageName . Dependency.depPkgName
+
+mkCompilableName :: UnqualComponentName -> CompilableName
+mkCompilableName = CompilableName . pack . UnqualComponentName.unUnqualComponentName
 
 headMay :: [a] -> Maybe a
 headMay = \case
