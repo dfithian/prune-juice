@@ -2,7 +2,6 @@ module Data.Prune.Unused where
 
 import Prelude
 
-import Data.Char (toLower)
 import Data.Foldable (traverse_)
 import Data.Set (Set)
 import Data.Text (pack, unpack)
@@ -10,9 +9,12 @@ import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescripti
 import qualified Data.Set as Set
 
 import Data.Prune.Cabal (stripGenericPackageDescription)
+import Data.Prune.Confirm (confirm)
+import qualified Data.Prune.Confirm as Confirm
 import qualified Data.Prune.Types as T
 
 data Apply = NoApply | Apply | ApplyNoVerify
+  deriving (Eq, Ord, Show)
 
 validateApply :: Bool -> Bool -> Either String Apply
 validateApply shouldApply noVerify = case (shouldApply, noVerify) of
@@ -28,27 +30,21 @@ apply T.Package {..} dependencies compilableMay = \case
     pure True
   Apply -> do
     printDependencies
-    T.whenM confirm run
+    T.whenM (confirm "Apply these changes? (Y/n)") run
     pure False
   ApplyNoVerify -> do
     printDependencies
-    putStrLn "Applying..."
+    putStrLn $ Confirm.bold "Applying..."
     run
     pure False
   where
     printDependencies = case compilableMay of
       Nothing -> do
-        putStrLn . unpack $ "Some unused base dependencies for package " <> packageName
+        putStrLn . Confirm.warn . unpack $ "Some unused base dependencies for package " <> packageName
         traverse_ (putStrLn . unpack . ("  " <>) . T.unDependencyName) $ Set.toList dependencies
       Just T.Compilable {..} -> do
-        putStrLn . unpack $ "Some unused dependencies for " <> pack (show compilableType) <> " " <> T.unCompilableName compilableName <> " in package " <> packageName
+        putStrLn . Confirm.warn . unpack $ "Some unused dependencies for " <> pack (show compilableType) <> " " <> T.unCompilableName compilableName <> " in package " <> packageName
         traverse_ (putStrLn . unpack . ("  " <>) . T.unDependencyName) $ Set.toList dependencies
-    confirm = do
-      putStrLn "Apply these changes? (Y/n)"
-      getLine >>= \case
-        yes | fmap toLower yes `elem` ["y", "yes"] -> pure True
-        no | fmap toLower no `elem` ["n", "no"] -> pure False
-        _ -> putStrLn "Please answer Y/n" >> confirm
     run = writeGenericPackageDescription packageFile $
       stripGenericPackageDescription packageDescription dependencies compilableMay
       

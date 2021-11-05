@@ -131,3 +131,6 @@ ifM b t f = do x <- b; if x then t else f
 
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM b t = ifM b t (pure ())
+
+unlessM :: Monad m => m Bool -> m () -> m ()
+unlessM b = whenM (not <$> b)

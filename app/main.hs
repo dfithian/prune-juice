@@ -18,9 +18,11 @@ import qualified Data.Set as Set
 import qualified Options.Applicative as Opt
 
 import Data.Prune.Cabal (findCabalFiles, parseCabalFiles, parseCabalProjectFile)
+import Data.Prune.Confirm (confirm)
 import Data.Prune.Dependency (getDependencyByModule)
 import Data.Prune.ImportParser (getCompilableUsedDependencies)
 import Data.Prune.Stack (parseStackYaml)
+import qualified Data.Prune.Confirm as Confirm
 import qualified Data.Prune.Types as T
 import qualified Data.Prune.Unused as Unused
 
@@ -91,8 +93,14 @@ main :: IO ()
 main = do
   Opts {..} <- parseArgs
 
-  apply <- either (\str -> putStrLn str >> exitWith (ExitFailure 1)) pure $
+  apply <- either (\str -> putStrLn (Confirm.err str) >> exitWith (ExitFailure 1)) pure $
     Unused.validateApply optsApply optsNoVerify
+
+  unless (apply == Unused.NoApply) $ do
+    putStrLn $ Confirm.warn "Applying results ignores package.yaml files"
+    putStrLn $ Confirm.warn "In addition, it could result in unexpected changes to cabal files"
+    T.unlessM (confirm "Do you want to continue? (Y/n)") $
+      exitWith ExitSuccess
 
   let ignoreList = Set.fromList optsExtraIgnoreList <> if optsNoDefaultIgnore then mempty else defaultIgnoreList
       logger ma = runLoggingT ma $ case verbosityToLogLevel optsVerbosity of
