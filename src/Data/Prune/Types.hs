@@ -6,6 +6,7 @@ import Prelude
 import Data.Aeson ((.:), FromJSON, parseJSON, withObject)
 import Data.Set (Set)
 import Data.Text (Text, unpack)
+import Distribution.Types.GenericPackageDescription (GenericPackageDescription)
 
 data BuildSystem = Stack | CabalProject | Cabal
   deriving (Eq, Ord, Bounded, Enum)
@@ -96,12 +97,15 @@ data Compilable = Compilable
 
 data Package = Package
   { packageName :: Text
+  , packageFile :: FilePath
+  , packageDescription :: GenericPackageDescription
+  -- ^ The path to the config file.
   , packageBaseDependencies :: Set DependencyName
   -- ^ The list of common dependencies.
   , packageCompilables :: [Compilable]
   -- ^ The things to compile in the package.
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Show)
 
 data StackYaml = StackYaml
   { stackYamlPackages :: [FilePath]
@@ -121,3 +125,9 @@ headMay = \case
 
 lastMay :: [a] -> Maybe a
 lastMay = headMay . reverse
+
+ifM :: Monad m => m Bool -> m a -> m a -> m a
+ifM b t f = do x <- b; if x then t else f
+
+whenM :: Monad m => m Bool -> m () -> m ()
+whenM b t = ifM b t (pure ())

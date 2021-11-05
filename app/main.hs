@@ -7,9 +7,9 @@ import Control.Monad.Logger
   ( LogLevel(LevelDebug, LevelError, LevelInfo), defaultOutput, logInfo, runLoggingT
   )
 import Control.Monad.State (execStateT, put)
-import Data.Foldable (for_, traverse_)
+import Data.Foldable (for_)
 import Data.Set (Set)
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text, pack)
 import Data.Traversable (for)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import System.FilePath.Posix ((</>))
@@ -22,6 +22,7 @@ import Data.Prune.Dependency (getDependencyByModule)
 import Data.Prune.ImportParser (getCompilableUsedDependencies)
 import Data.Prune.Stack (parseStackYaml)
 import qualified Data.Prune.Types as T
+import qualified Data.Prune.Unused as Unused
 
 data Opts = Opts
   { optsProjectRoot :: FilePath
@@ -31,6 +32,8 @@ data Opts = Opts
   , optsPackages :: [Text]
   , optsVerbosity :: T.Verbosity
   , optsBuildSystem :: Maybe T.BuildSystem
+  , optsApply :: Bool
+  , optsNoVerify :: Bool
   }
 
 defaultIgnoreList :: Set T.DependencyName
@@ -81,10 +84,15 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
         Opt.long "build-system"
           <> Opt.metavar "BUILD_SYSTEM"
           <> Opt.help ("Build system to use instead of inference (one of " <> show T.allBuildSystems <> ")") ) )
+      <*> Opt.switch (Opt.long "apply" <> Opt.help "Apply changes (prompts for confirmation unless also specifying --no-verify)")
+      <*> Opt.switch (Opt.long "no-verify" <> Opt.help "Skip confirmation when applying changes (implies --apply)")
 
 main :: IO ()
 main = do
   Opts {..} <- parseArgs
+
+  apply <- either (\str -> putStrLn str >> exitWith (ExitFailure 1)) pure $
+    Unused.validateApply optsApply optsNoVerify
 
   let ignoreList = Set.fromList optsExtraIgnoreList <> if optsNoDefaultIgnore then mempty else defaultIgnoreList
       logger ma = runLoggingT ma $ case verbosityToLogLevel optsVerbosity of
@@ -104,21 +112,19 @@ main = do
     packages <- parseCabalFiles packageDirs ignoreList optsPackages
 
     dependencyByModule <- getDependencyByModule optsProjectRoot buildSystem packages
-    flip execStateT ExitSuccess $ for_ packages $ \T.Package {..} -> do
+    flip execStateT ExitSuccess $ for_ packages $ \package@T.Package {..} -> do
       let addSelf = if optsNoIgnoreSelf then id else Set.insert (T.DependencyName packageName)
       baseUsedDependencies <- fmap mconcat . for packageCompilables $ \compilable@T.Compilable {..} -> do
         usedDependencies <- addSelf <$> getCompilableUsedDependencies dependencyByModule compilable
         let (baseUsedDependencies, otherUsedDependencies) = Set.partition (flip Set.member packageBaseDependencies) usedDependencies
             otherUnusedDependencies = Set.difference compilableDependencies otherUsedDependencies
         unless (Set.null otherUnusedDependencies) $ do
-          liftIO . putStrLn . unpack $ "Some unused dependencies for " <> pack (show compilableType) <> " " <> T.unCompilableName compilableName <> " in package " <> packageName
-          traverse_ (liftIO . putStrLn . unpack . ("  " <>) . T.unDependencyName) $ Set.toList otherUnusedDependencies
-          put $ ExitFailure 1
+          shouldFail <- liftIO $ Unused.apply package otherUnusedDependencies (Just compilable) apply
+          when shouldFail $ put $ ExitFailure 1
         pure baseUsedDependencies
       let baseUnusedDependencies = Set.difference packageBaseDependencies baseUsedDependencies
       unless (Set.null baseUnusedDependencies) $ do
-        liftIO . putStrLn . unpack $ "Some unused base dependencies for package " <> packageName
-        liftIO . traverse_ (putStrLn . unpack . ("  " <>) . T.unDependencyName) $ Set.toList baseUnusedDependencies
-        put $ ExitFailure 1
+        shouldFail <- liftIO $ Unused.apply package baseUnusedDependencies Nothing apply
+        when shouldFail $ put $ ExitFailure 1
 
   exitWith code

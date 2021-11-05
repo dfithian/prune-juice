@@ -28,6 +28,7 @@ import qualified Distribution.Types.CondTree as CondTree
 import qualified Distribution.Types.Dependency as Dependency
 import qualified Distribution.Types.Executable as Executable
 import qualified Distribution.Types.GenericPackageDescription as GenericPackageDescription
+import Distribution.Types.GenericPackageDescription (GenericPackageDescription)
 import qualified Distribution.Types.Library as Library
 import qualified Distribution.Types.PackageDescription as PackageDescription
 import qualified Distribution.Types.PackageId as PackageId
@@ -35,6 +36,7 @@ import qualified Distribution.Types.PackageName as PackageName
 import qualified Distribution.Types.TestSuite as TestSuite
 import qualified Distribution.Types.TestSuiteInterface as TestSuiteInterface
 import qualified Distribution.Types.UnqualComponentName as UnqualComponentName
+import Distribution.Types.UnqualComponentName (UnqualComponentName)
 import qualified Distribution.Verbosity as Verbosity
 
 import qualified Data.Prune.Types as T
@@ -116,6 +118,8 @@ parseCabalFile fp ignores = do
   benchmarks        <- traverse (getBenchmarkCompilable  fp (ignores <> baseDependencies) <$> pack . UnqualComponentName.unUnqualComponentName . fst <*> snd) . GenericPackageDescription.condBenchmarks $ genericPackageDescription
   pure T.Package
     { packageName = packageName
+    , packageFile = cabalFile
+    , packageDescription = genericPackageDescription
     , packageBaseDependencies = baseDependencies
     , packageCompilables = libraries <> internalLibraries <> executables <> tests <> benchmarks
     }
@@ -137,3 +141,47 @@ parseCabalProjectFile :: FilePath -> IO (T.BuildSystem, [FilePath])
 parseCabalProjectFile cabalProjectFile = do
   project <- readProject cabalProjectFile
   pure (T.CabalProject, takeDirectory . fst <$> prjPackages project)
+
+-- |Filter out dependencies.
+stripDependencies :: Set T.DependencyName -> [Dependency] -> [Dependency]
+stripDependencies dependencies = foldr go mempty
+  where
+    go next accum = case Set.member (T.DependencyName (pack (PackageName.unPackageName (Dependency.depPkgName next)))) dependencies of
+      True -> accum
+      False -> next:accum
+
+-- |Strip dependencies from a single target.
+stripCondTree :: Set T.DependencyName -> CondTree a [Dependency] b -> CondTree a [Dependency] b
+stripCondTree dependencies condTree = condTree
+  { CondTree.condTreeConstraints = stripDependencies dependencies (CondTree.condTreeConstraints condTree)
+  }
+
+-- |Strip dependencies from multiple targets.
+stripCondTrees :: Set T.DependencyName -> T.CompilableName -> [(UnqualComponentName, CondTree a [Dependency] b)] -> [(UnqualComponentName, CondTree a [Dependency] b)]
+stripCondTrees dependencies compilableName = foldr go mempty
+  where
+    go next accum = case compilableName == T.CompilableName (pack (UnqualComponentName.unUnqualComponentName (fst next))) of
+      True -> (fst next, stripCondTree dependencies (snd next)):accum
+      False -> next:accum
+
+-- |Strip dependencies from a package.
+stripGenericPackageDescription :: GenericPackageDescription -> Set T.DependencyName -> Maybe T.Compilable -> GenericPackageDescription
+stripGenericPackageDescription genericPackageDescription dependencies = \case
+  Nothing -> case GenericPackageDescription.condLibrary genericPackageDescription of
+    Nothing -> genericPackageDescription
+    Just lib -> genericPackageDescription
+      { GenericPackageDescription.condLibrary = Just (stripCondTree dependencies lib)
+      }
+  Just T.Compilable {..} -> case compilableType of
+    T.CompilableTypeLibrary -> genericPackageDescription
+      { GenericPackageDescription.condSubLibraries = stripCondTrees dependencies compilableName (GenericPackageDescription.condSubLibraries genericPackageDescription)
+      }
+    T.CompilableTypeExecutable -> genericPackageDescription
+      { GenericPackageDescription.condExecutables = stripCondTrees dependencies compilableName (GenericPackageDescription.condExecutables genericPackageDescription)
+      }
+    T.CompilableTypeTest -> genericPackageDescription
+      { GenericPackageDescription.condTestSuites = stripCondTrees dependencies compilableName (GenericPackageDescription.condTestSuites genericPackageDescription)
+      }
+    T.CompilableTypeBenchmark -> genericPackageDescription
+      { GenericPackageDescription.condBenchmarks = stripCondTrees dependencies compilableName (GenericPackageDescription.condBenchmarks genericPackageDescription)
+      }

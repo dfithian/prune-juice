@@ -1,13 +1,6 @@
 cabal-version: 1.12
-
--- This file has been generated from package.yaml by hpack version 0.34.4.
---
--- see: https://github.com/sol/hpack
---
--- hash: 99725ce5eb48860666f10031a3c191aa02df757be5624aa98f05bd47fbabf62f
-
 name:           prune-juice
-version:        0.6
+version:        0.7
 synopsis:       Prune unused Haskell dependencies
 description:    Prune unused Haskell dependencies - see README at <https://github.com/dfithian/prune-juice#readme>
 category:       Development
@@ -36,6 +29,7 @@ library
       Data.Prune.ImportParser
       Data.Prune.Stack
       Data.Prune.Types
+      Data.Prune.Unused
   other-modules:
       Paths_prune_juice
   hs-source-dirs:
