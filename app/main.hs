@@ -1,6 +1,7 @@
 import Prelude
 
 import Control.Applicative ((<|>), many, optional)
+import Control.Arrow (first, second)
 import Control.Monad (unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger
@@ -8,9 +9,11 @@ import Control.Monad.Logger
   )
 import Control.Monad.State (execStateT, put)
 import Data.Foldable (for_)
+import Data.Monoid (appEndo)
 import Data.Set (Set)
 import Data.Text (Text, pack)
 import Data.Traversable (for)
+import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import System.FilePath.Posix ((</>))
 import System.IO (stdout)
@@ -122,17 +125,26 @@ main = do
     dependencyByModule <- getDependencyByModule optsProjectRoot buildSystem packages
     flip execStateT ExitSuccess $ for_ packages $ \package@T.Package {..} -> do
       let addSelf = if optsNoIgnoreSelf then id else Set.insert (T.DependencyName packageName)
-      baseUsedDependencies <- fmap mconcat . for packageCompilables $ \compilable@T.Compilable {..} -> do
+      (baseUsedDependencies, stripTargets) <- fmap (first mconcat . second mconcat . unzip) . for packageCompilables $ \compilable@T.Compilable {..} -> do
         usedDependencies <- addSelf <$> getCompilableUsedDependencies dependencyByModule compilable
         let (baseUsedDependencies, otherUsedDependencies) = Set.partition (flip Set.member packageBaseDependencies) usedDependencies
             otherUnusedDependencies = Set.difference compilableDependencies otherUsedDependencies
-        unless (Set.null otherUnusedDependencies) $ do
-          shouldFail <- liftIO $ Unused.apply package otherUnusedDependencies (Just compilable) apply
-          when shouldFail $ put $ ExitFailure 1
-        pure baseUsedDependencies
+        stripTargets <- case Set.null otherUnusedDependencies of
+          True -> pure mempty
+          False -> do
+            (shouldFail, stripTargets) <- liftIO $ Unused.apply package otherUnusedDependencies (Just compilable) apply
+            when shouldFail $ put $ ExitFailure 1
+            pure stripTargets
+        pure (baseUsedDependencies, stripTargets)
       let baseUnusedDependencies = Set.difference packageBaseDependencies baseUsedDependencies
-      unless (Set.null baseUnusedDependencies) $ do
-        shouldFail <- liftIO $ Unused.apply package baseUnusedDependencies Nothing apply
-        when shouldFail $ put $ ExitFailure 1
+      stripLibrary <- case Set.null baseUnusedDependencies of
+        True -> pure mempty
+        False -> do
+          (shouldFail, stripLibrary) <- liftIO $ Unused.apply package baseUnusedDependencies Nothing apply
+          when shouldFail $ put $ ExitFailure 1
+          pure stripLibrary
+      unless (apply == Unused.NoApply) $ do
+        liftIO $ putStrLn $ Confirm.bold "Applying..."
+        liftIO $ writeGenericPackageDescription packageFile (appEndo (stripTargets <> stripLibrary) packageDescription)
 
   exitWith code
