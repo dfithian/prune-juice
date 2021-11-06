@@ -99,7 +99,7 @@ main = do
   apply <- either (\str -> putStrLn (Confirm.err str) >> exitWith (ExitFailure 1)) pure $
     Unused.validateApply optsApply optsNoVerify
 
-  unless (apply == Unused.NoApply) $ do
+  when (apply == Unused.Apply) $ do
     putStrLn $ Confirm.warn "Applying results ignores package.yaml files"
     putStrLn $ Confirm.warn "In addition, it could result in unexpected changes to cabal files"
     T.unlessM (confirm "Do you want to continue? (Y/n)") $

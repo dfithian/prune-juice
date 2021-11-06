@@ -151,17 +151,46 @@ stripDependencies dependencies = foldr go mempty
       False -> next:accum
 
 -- |Strip dependencies from a single target.
-stripCondTree :: Set T.DependencyName -> CondTree a [Dependency] b -> CondTree a [Dependency] b
-stripCondTree dependencies condTree = condTree
-  { CondTree.condTreeConstraints = stripDependencies dependencies (CondTree.condTreeConstraints condTree)
+stripBuildInfo :: Set T.DependencyName -> BuildInfo -> BuildInfo
+stripBuildInfo dependencies buildInfo = buildInfo
+  { BuildInfo.targetBuildDepends = stripDependencies dependencies (BuildInfo.targetBuildDepends buildInfo)
+  }
+
+-- |Strip dependencies from a library.
+stripLibrary :: Set T.DependencyName -> Library -> Library
+stripLibrary dependencies lib = lib
+  { Library.libBuildInfo = stripBuildInfo dependencies (Library.libBuildInfo lib)
+  }
+
+-- |Strip dependencies from an executable.
+stripExecutable :: Set T.DependencyName -> Executable -> Executable
+stripExecutable dependencies exe = exe
+  { Executable.buildInfo = stripBuildInfo dependencies (Executable.buildInfo exe)
+  }
+
+-- |Strip dependencies from a test suite.
+stripTestSuite :: Set T.DependencyName -> TestSuite -> TestSuite
+stripTestSuite dependencies test = test
+  { TestSuite.testBuildInfo = stripBuildInfo dependencies (TestSuite.testBuildInfo test)
+  }
+
+-- |Strip dependencies from a benchmark.
+stripBenchmark :: Set T.DependencyName -> Benchmark -> Benchmark
+stripBenchmark dependencies bench = bench
+  { Benchmark.benchmarkBuildInfo = stripBuildInfo dependencies (Benchmark.benchmarkBuildInfo bench)
+  }
+
+stripCondTree :: (b -> b) -> CondTree a [Dependency] b -> CondTree a [Dependency] b
+stripCondTree f condTree = condTree
+  { CondTree.condTreeData = f (CondTree.condTreeData condTree)
   }
 
 -- |Strip dependencies from multiple targets.
-stripCondTrees :: Set T.DependencyName -> T.CompilableName -> [(UnqualComponentName, CondTree a [Dependency] b)] -> [(UnqualComponentName, CondTree a [Dependency] b)]
-stripCondTrees dependencies compilableName = foldr go mempty
+stripCondTrees :: (b -> b) -> T.CompilableName -> [(UnqualComponentName, CondTree a [Dependency] b)] -> [(UnqualComponentName, CondTree a [Dependency] b)]
+stripCondTrees f compilableName = foldr go mempty
   where
     go next accum = case compilableName == T.mkCompilableName (fst next) of
-      True -> (fst next, stripCondTree dependencies (snd next)):accum
+      True -> (fst next, stripCondTree f (snd next)):accum
       False -> next:accum
 
 -- |Strip dependencies from a package.
@@ -170,18 +199,18 @@ stripGenericPackageDescription genericPackageDescription dependencies = \case
   Nothing -> case GenericPackageDescription.condLibrary genericPackageDescription of
     Nothing -> genericPackageDescription
     Just lib -> genericPackageDescription
-      { GenericPackageDescription.condLibrary = Just (stripCondTree dependencies lib)
+      { GenericPackageDescription.condLibrary = Just (stripCondTree (stripLibrary dependencies) lib)
       }
   Just T.Compilable {..} -> case compilableType of
     T.CompilableTypeLibrary -> genericPackageDescription
-      { GenericPackageDescription.condSubLibraries = stripCondTrees dependencies compilableName (GenericPackageDescription.condSubLibraries genericPackageDescription)
+      { GenericPackageDescription.condSubLibraries = stripCondTrees (stripLibrary dependencies) compilableName (GenericPackageDescription.condSubLibraries genericPackageDescription)
       }
     T.CompilableTypeExecutable -> genericPackageDescription
-      { GenericPackageDescription.condExecutables = stripCondTrees dependencies compilableName (GenericPackageDescription.condExecutables genericPackageDescription)
+      { GenericPackageDescription.condExecutables = stripCondTrees (stripExecutable dependencies) compilableName (GenericPackageDescription.condExecutables genericPackageDescription)
       }
     T.CompilableTypeTest -> genericPackageDescription
-      { GenericPackageDescription.condTestSuites = stripCondTrees dependencies compilableName (GenericPackageDescription.condTestSuites genericPackageDescription)
+      { GenericPackageDescription.condTestSuites = stripCondTrees (stripTestSuite dependencies) compilableName (GenericPackageDescription.condTestSuites genericPackageDescription)
       }
     T.CompilableTypeBenchmark -> genericPackageDescription
-      { GenericPackageDescription.condBenchmarks = stripCondTrees dependencies compilableName (GenericPackageDescription.condBenchmarks genericPackageDescription)
+      { GenericPackageDescription.condBenchmarks = stripCondTrees (stripBenchmark dependencies) compilableName (GenericPackageDescription.condBenchmarks genericPackageDescription)
       }
