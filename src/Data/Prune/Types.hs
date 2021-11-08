@@ -123,6 +123,42 @@ instance FromJSON StackYaml where
     StackYaml
       <$> obj .: "packages"
 
+data ShouldApply = ShouldNotApply | ShouldApply | ShouldApplyNoVerify
+  deriving (Eq, Ord, Bounded, Enum)
+
+instance Show ShouldApply where
+  show = \case
+    ShouldNotApply -> "no-apply"
+    ShouldApply -> "apply"
+    ShouldApplyNoVerify -> "apply-no-verify"
+
+parseApply :: String -> Maybe ShouldApply
+parseApply = \case
+  "no-apply" -> Just ShouldNotApply
+  "apply" -> Just ShouldApply
+  "apply-no-verify" -> Just ShouldApplyNoVerify
+  _ -> Nothing
+
+allApply :: [ShouldApply]
+allApply = [minBound..maxBound]
+
+data ApplyStrategy = ApplyStrategySafe | ApplyStrategySmart
+  deriving (Eq, Ord, Bounded, Enum)
+
+instance Show ApplyStrategy where
+  show = \case
+    ApplyStrategySafe -> "safe"
+    ApplyStrategySmart -> "smart"
+
+parseApplyStrategy :: String -> Maybe ApplyStrategy
+parseApplyStrategy = \case
+  "safe" -> Just ApplyStrategySafe
+  "smart" -> Just ApplyStrategySmart
+  _ -> Nothing
+
+allApplyStrategies :: [ApplyStrategy]
+allApplyStrategies = [minBound..maxBound]
+
 mkDependencyName :: Dependency -> DependencyName
 mkDependencyName = DependencyName . pack . PackageName.unPackageName . Dependency.depPkgName
 

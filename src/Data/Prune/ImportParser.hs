@@ -3,7 +3,7 @@ module Data.Prune.ImportParser where
 
 import Prelude
 
-import Control.Applicative ((<|>), optional, some)
+import Control.Applicative ((<|>), optional)
 import Control.Arrow (left)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -15,7 +15,7 @@ import Data.Set (Set)
 import Data.Text (pack)
 import Data.Traversable (for)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, between, oneOf, parse)
+import Text.Megaparsec (Parsec, between, oneOf, parse, some)
 import Text.Megaparsec.Char (alphaNumChar, char, space, string, symbolChar, upperChar)
 import qualified Data.Map as Map
 import qualified Data.Set as Set

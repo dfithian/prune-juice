@@ -23,14 +23,18 @@ source-repository head
 
 library
   exposed-modules:
+      Data.Prune.Apply
       Data.Prune.Cabal
+      Data.Prune.ApplyStrategy.Safe
+      Data.Prune.ApplyStrategy.Smart
       Data.Prune.Confirm
       Data.Prune.Dependency
       Data.Prune.File
       Data.Prune.ImportParser
+      Data.Prune.Section.Parser
+      Data.Prune.Section.Types
       Data.Prune.Stack
       Data.Prune.Types
-      Data.Prune.Unused
   other-modules:
       Paths_prune_juice
   hs-source-dirs:
@@ -80,6 +84,7 @@ library
     , monad-logger
     , mtl
     , process
+    , regex-compat
     , text
     , text-ansi
     , yaml
@@ -147,9 +152,11 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: main.hs
   other-modules:
+      Data.Prune.ApplyStrategy.SmartSpec
       Data.Prune.CabalSpec
       Data.Prune.DependencySpec
       Data.Prune.ImportParserSpec
+      Data.Prune.Section.ParserSpec
       Paths_prune_juice
   hs-source-dirs:
       test

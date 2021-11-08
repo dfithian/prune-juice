@@ -1,33 +1,30 @@
 import Prelude
 
 import Control.Applicative ((<|>), many, optional)
-import Control.Arrow (first, second)
 import Control.Monad (unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger
   ( LogLevel(LevelDebug, LevelError, LevelInfo), defaultOutput, logInfo, runLoggingT
   )
 import Control.Monad.State (execStateT, put)
-import Data.Foldable (for_)
-import Data.Monoid (appEndo)
+import Data.Foldable (foldrM, for_)
 import Data.Set (Set)
 import Data.Text (Text, pack)
-import Data.Traversable (for)
-import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import System.FilePath.Posix ((</>))
 import System.IO (stdout)
 import qualified Data.Set as Set
 import qualified Options.Applicative as Opt
 
+import Data.Prune.Apply (Apply(ApplySafe, ApplySmart), SomeApply(SomeApply), runApply, writeApply)
 import Data.Prune.Cabal (findCabalFiles, parseCabalFiles, parseCabalProjectFile)
 import Data.Prune.Confirm (confirm)
 import Data.Prune.Dependency (getDependencyByModule)
 import Data.Prune.ImportParser (getCompilableUsedDependencies)
+import Data.Prune.Section.Parser (readCabalSections)
 import Data.Prune.Stack (parseStackYaml)
 import qualified Data.Prune.Confirm as Confirm
 import qualified Data.Prune.Types as T
-import qualified Data.Prune.Unused as Unused
 
 data Opts = Opts
   { optsProjectRoot :: FilePath
@@ -37,8 +34,8 @@ data Opts = Opts
   , optsPackages :: [Text]
   , optsVerbosity :: T.Verbosity
   , optsBuildSystem :: Maybe T.BuildSystem
-  , optsApply :: Bool
-  , optsNoVerify :: Bool
+  , optsShouldApply :: T.ShouldApply
+  , optsApplyStrategy :: T.ApplyStrategy
   }
 
 defaultIgnoreList :: Set T.DependencyName
@@ -89,17 +86,22 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
         Opt.long "build-system"
           <> Opt.metavar "BUILD_SYSTEM"
           <> Opt.help ("Build system to use instead of inference (one of " <> show T.allBuildSystems <> ")") ) )
-      <*> Opt.switch (Opt.long "apply" <> Opt.help "Apply changes (prompts for confirmation unless also specifying --no-verify)")
-      <*> Opt.switch (Opt.long "no-verify" <> Opt.help "Skip confirmation when applying changes (implies --apply)")
+      <*> Opt.option (Opt.maybeReader T.parseApply) (
+        Opt.long "apply"
+          <> Opt.help ("Apply changes (one of " <> show T.allApply <> ")" )
+          <> Opt.value T.ShouldNotApply
+          <> Opt.showDefault )
+      <*> Opt.option (Opt.maybeReader T.parseApplyStrategy) (
+        Opt.long "apply-strategy"
+          <> Opt.help ("Strategy to use to apply (one of " <> show T.allApplyStrategies <> ")")
+          <> Opt.value T.ApplyStrategySafe
+          <> Opt.showDefault )
 
 main :: IO ()
 main = do
   Opts {..} <- parseArgs
 
-  apply <- either (\str -> putStrLn (Confirm.err str) >> exitWith (ExitFailure 1)) pure $
-    Unused.validateApply optsApply optsNoVerify
-
-  when (apply == Unused.Apply) $ do
+  when (optsShouldApply == T.ShouldApply) $ do
     putStrLn $ Confirm.warn "Applying results ignores package.yaml files"
     putStrLn $ Confirm.warn "In addition, it could result in unexpected changes to cabal files"
     T.unlessM (confirm "Do you want to continue? (Y/n)") $
@@ -124,27 +126,37 @@ main = do
 
     dependencyByModule <- getDependencyByModule optsProjectRoot buildSystem packages
     flip execStateT ExitSuccess $ for_ packages $ \package@T.Package {..} -> do
+
+      apInit <- case optsApplyStrategy of
+        T.ApplyStrategySafe -> pure $ SomeApply $ ApplySafe packageFile packageDescription mempty
+        T.ApplyStrategySmart -> do 
+          let onFailure str = do
+                liftIO $ putStrLn $ Confirm.err $ "Failed to parse cabal sections for " <> packageFile <> " due to " <> str
+                put $ ExitFailure 1
+                pure mempty
+          sections <- either onFailure pure =<< liftIO (readCabalSections packageFile)
+          pure $ SomeApply $ ApplySmart packageFile sections mempty
+
       let addSelf = if optsNoIgnoreSelf then id else Set.insert (T.DependencyName packageName)
-      (baseUsedDependencies, stripTargets) <- fmap (first mconcat . second mconcat . unzip) . for packageCompilables $ \compilable@T.Compilable {..} -> do
-        usedDependencies <- addSelf <$> getCompilableUsedDependencies dependencyByModule compilable
-        let (baseUsedDependencies, otherUsedDependencies) = Set.partition (flip Set.member packageBaseDependencies) usedDependencies
-            otherUnusedDependencies = Set.difference compilableDependencies otherUsedDependencies
-        stripTargets <- case Set.null otherUnusedDependencies of
-          True -> pure mempty
-          False -> do
-            (shouldFail, stripTargets) <- liftIO $ Unused.apply package otherUnusedDependencies (Just compilable) apply
-            when shouldFail $ put $ ExitFailure 1
-            pure stripTargets
-        pure (baseUsedDependencies, stripTargets)
-      let baseUnusedDependencies = Set.difference packageBaseDependencies baseUsedDependencies
-      stripLibrary <- case Set.null baseUnusedDependencies of
-        True -> pure mempty
-        False -> do
-          (shouldFail, stripLibrary) <- liftIO $ Unused.apply package baseUnusedDependencies Nothing apply
-          when shouldFail $ put $ ExitFailure 1
-          pure stripLibrary
-      unless (apply == Unused.NoApply) $ do
+          runCompilable compilable@T.Compilable {..} (oldShouldFail, oldUsed, oldStrip) = do
+            usedDependencies <- addSelf <$> getCompilableUsedDependencies dependencyByModule compilable
+            let (baseUsedDependencies, otherUsedDependencies) = Set.partition (flip Set.member packageBaseDependencies) usedDependencies
+                otherUnusedDependencies = Set.difference compilableDependencies otherUsedDependencies
+            case Set.null otherUnusedDependencies of
+              True -> pure (oldShouldFail, baseUsedDependencies <> oldUsed, oldStrip)
+              False -> do
+                (shouldFail, strip) <- liftIO $ runApply oldStrip package otherUnusedDependencies (Just compilable) optsShouldApply
+                pure (shouldFail || oldShouldFail, baseUsedDependencies <> oldUsed, strip)
+      (targetsShouldFail, targetsUsedDependencies, targetsStrip) <- foldrM runCompilable (False, mempty, apInit) packageCompilables
+
+      let baseUnusedDependencies = Set.difference packageBaseDependencies targetsUsedDependencies
+      (finalShouldFail, stripFinal) <- case Set.null baseUnusedDependencies of
+        True -> pure (False, targetsStrip)
+        False -> liftIO $ runApply targetsStrip package baseUnusedDependencies Nothing optsShouldApply
+
+      when (targetsShouldFail || finalShouldFail) $ put $ ExitFailure 1
+      unless (optsShouldApply == T.ShouldNotApply) $ do
         liftIO $ putStrLn $ Confirm.bold "Applying..."
-        liftIO $ writeGenericPackageDescription packageFile (appEndo (stripTargets <> stripLibrary) packageDescription)
+        liftIO $ writeApply stripFinal
 
   exitWith code
