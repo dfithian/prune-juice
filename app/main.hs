@@ -94,7 +94,7 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
       <*> Opt.option (Opt.maybeReader T.parseApplyStrategy) (
         Opt.long "apply-strategy"
           <> Opt.help ("Strategy to use to apply (one of " <> show T.allApplyStrategies <> ")")
-          <> Opt.value T.ApplyStrategySafe
+          <> Opt.value T.ApplyStrategySmart
           <> Opt.showDefault )
 
 main :: IO ()
