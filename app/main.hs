@@ -34,7 +34,8 @@ data Opts = Opts
   , optsPackages :: [Text]
   , optsVerbosity :: T.Verbosity
   , optsBuildSystem :: Maybe T.BuildSystem
-  , optsShouldApply :: T.ShouldApply
+  , optsApply :: Bool
+  , optsNoVerify :: Bool
   , optsApplyStrategy :: T.ApplyStrategy
   }
 
@@ -86,11 +87,12 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
         Opt.long "build-system"
           <> Opt.metavar "BUILD_SYSTEM"
           <> Opt.help ("Build system to use instead of inference (one of " <> show T.allBuildSystems <> ")") ) )
-      <*> Opt.option (Opt.maybeReader T.parseApply) (
+      <*> Opt.switch (
         Opt.long "apply"
-          <> Opt.help ("Apply changes (one of " <> show T.allApply <> ")" )
-          <> Opt.value T.ShouldNotApply
-          <> Opt.showDefault )
+          <> Opt.help "Apply changes" )
+      <*> Opt.switch (
+        Opt.long "no-verify"
+          <> Opt.help "Do not ask for verification when applying (implies --apply)" )
       <*> Opt.option (Opt.maybeReader T.parseApplyStrategy) (
         Opt.long "apply-strategy"
           <> Opt.help ("Strategy to use to apply (one of " <> show T.allApplyStrategies <> ")")
@@ -101,7 +103,9 @@ main :: IO ()
 main = do
   Opts {..} <- parseArgs
 
-  when (optsShouldApply == T.ShouldApply) $ do
+  let shouldApply = T.validateShouldApply (optsApply, optsNoVerify)
+
+  when (shouldApply == T.ShouldApply) $ do
     putStrLn $ Confirm.warn "Applying results ignores package.yaml files"
     putStrLn $ Confirm.warn "In addition, it could result in unexpected changes to cabal files"
     T.unlessM (confirm "Do you want to continue? (Y/n)") $
@@ -145,17 +149,17 @@ main = do
             case Set.null otherUnusedDependencies of
               True -> pure (oldShouldFail, baseUsedDependencies <> oldUsed, oldStrip)
               False -> do
-                (shouldFail, strip) <- liftIO $ runApply oldStrip package otherUnusedDependencies (Just compilable) optsShouldApply
+                (shouldFail, strip) <- liftIO $ runApply oldStrip package otherUnusedDependencies (Just compilable) shouldApply
                 pure (shouldFail || oldShouldFail, baseUsedDependencies <> oldUsed, strip)
       (targetsShouldFail, targetsUsedDependencies, targetsStrip) <- foldrM runCompilable (False, mempty, apInit) packageCompilables
 
       let baseUnusedDependencies = Set.difference packageBaseDependencies targetsUsedDependencies
       (finalShouldFail, stripFinal) <- case Set.null baseUnusedDependencies of
         True -> pure (False, targetsStrip)
-        False -> liftIO $ runApply targetsStrip package baseUnusedDependencies Nothing optsShouldApply
+        False -> liftIO $ runApply targetsStrip package baseUnusedDependencies Nothing shouldApply
 
       when (targetsShouldFail || finalShouldFail) $ put $ ExitFailure 1
-      unless (optsShouldApply == T.ShouldNotApply) $ do
+      unless (shouldApply == T.ShouldNotApply) $ do
         liftIO $ putStrLn $ Confirm.bold "Applying..."
         liftIO $ writeApply stripFinal
 

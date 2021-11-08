@@ -132,12 +132,11 @@ instance Show ShouldApply where
     ShouldApply -> "apply"
     ShouldApplyNoVerify -> "apply-no-verify"
 
-parseApply :: String -> Maybe ShouldApply
-parseApply = \case
-  "no-apply" -> Just ShouldNotApply
-  "apply" -> Just ShouldApply
-  "apply-no-verify" -> Just ShouldApplyNoVerify
-  _ -> Nothing
+validateShouldApply :: (Bool, Bool) -> ShouldApply
+validateShouldApply = \case
+  (_, True) -> ShouldApplyNoVerify
+  (True, False) -> ShouldApply
+  (False, False) -> ShouldNotApply
 
 allApply :: [ShouldApply]
 allApply = [minBound..maxBound]

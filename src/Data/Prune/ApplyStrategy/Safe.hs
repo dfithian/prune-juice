@@ -95,4 +95,3 @@ stripGenericPackageDescription genericPackageDescription dependencies = \case
     T.CompilableTypeBenchmark -> genericPackageDescription
       { GenericPackageDescription.condBenchmarks = stripCondTrees (stripBenchmark dependencies) compilableName (GenericPackageDescription.condBenchmarks genericPackageDescription)
       }
-
