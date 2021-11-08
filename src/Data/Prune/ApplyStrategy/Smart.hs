@@ -28,7 +28,7 @@ matchDependencyName str = Just . T.DependencyName . pack =<< T.headMay =<< match
 stripOneBuildDepends :: String -> Set T.DependencyName -> Maybe String
 stripOneBuildDepends input dependencies =
   let output = intercalate "," . mapMaybe go . fmap unpack . splitOn "," . pack $ input
-  in case all ((==) ' ') output of
+  in case not (null output) && all ((==) ' ') output of
       True -> Nothing
       False -> Just output
   where

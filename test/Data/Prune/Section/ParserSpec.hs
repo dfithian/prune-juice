@@ -7,6 +7,7 @@ import System.FilePath.TH (fileRelativeToAbsolute)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Text.Megaparsec (parse)
 
+import Data.Prune.ApplyStrategy.Smart (stripSections)
 import qualified Data.Prune.Section.Types as T
 import qualified Data.Prune.Types as T
 
@@ -86,4 +87,9 @@ spec = describe "Data.Prune.Section.Parser" $ do
   it "should parse and output the same thing" $ do
     input <- readFile cabalFile
     let output = either (const "") renderCabalSections $ parseCabalSections input
+    output `shouldBe` input
+
+  it "should parse and output the same thing after applying a trivial change" $ do
+    input <- readFile cabalFile
+    let output = either (const "") (\xs -> renderCabalSections (stripSections xs mempty Nothing)) $ parseCabalSections input
     output `shouldBe` input
