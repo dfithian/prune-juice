@@ -117,7 +117,7 @@ parseCabalFile fp ignores = do
   benchmarks        <- traverse (getBenchmarkCompilable  fp (ignores <> baseDependencies) <$> fst <*> snd) . GenericPackageDescription.condBenchmarks $ genericPackageDescription
   pure T.Package
     { packageName = packageName
-    , packageFile = cabalFile
+    , packageFile = fp </> cabalFile
     , packageDescription = genericPackageDescription
     , packageBaseDependencies = baseDependencies
     , packageCompilables = libraries <> internalLibraries <> executables <> tests <> benchmarks
