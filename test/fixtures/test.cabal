@@ -1,0 +1,15 @@
+common global-options
+  default-language: Haskell2010
+
+common options
+  import: global-options
+  build-depends: base
+
+common global-exe-options
+  ghc-options: -threaded
+
+library
+  import: options
+
+executable exe
+  import: options, global-exe-options

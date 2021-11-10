@@ -1,9 +1,9 @@
--- |Utilities for parsing imports from Haskell source files.
+-- |Description: Utilities for parsing imports from Haskell source files.
 module Data.Prune.ImportParser where
 
 import Prelude
 
-import Control.Applicative ((<|>), optional, some)
+import Control.Applicative ((<|>), optional)
 import Control.Arrow (left)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -15,7 +15,7 @@ import Data.Set (Set)
 import Data.Text (pack)
 import Data.Traversable (for)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, between, oneOf, parse)
+import Text.Megaparsec (Parsec, between, oneOf, parse, some)
 import Text.Megaparsec.Char (alphaNumChar, char, space, string, symbolChar, upperChar)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -72,14 +72,14 @@ parseFileImports fp = do
   left show . fmap Set.fromList . traverse (parse oneImport fp) . filter (isPrefixOf "import ") . lines
     <$> readFile fp
 
--- |Parse name from the `ghc-pkg` field description.
+-- |Parse name from the @ghc-pkg@ field description.
 parseDependencyName :: String -> Either String (Maybe T.DependencyName)
 parseDependencyName input =
   if null input
     then Right Nothing
     else left show . fmap Just . parse dependencyName "" $ input
 
--- |Parse exposed modules from the `ghc-pkg` field description.
+-- |Parse exposed modules from the @ghc-pkg@ field description.
 parseExposedModules :: String -> Either String (Set T.ModuleName)
 parseExposedModules input =
   if null input

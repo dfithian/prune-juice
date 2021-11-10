@@ -1,3 +1,4 @@
+-- |Description: Utilities for extracting stack info to the canonical types in "Data.Prune.Types".
 module Data.Prune.Stack where
 
 import Prelude

@@ -1,11 +1,17 @@
--- |Types for pruning.
+-- |Description: Types for pruning.
 module Data.Prune.Types where
 
 import Prelude
 
 import Data.Aeson ((.:), FromJSON, parseJSON, withObject)
 import Data.Set (Set)
-import Data.Text (Text, unpack)
+import Data.Text (Text, pack, unpack)
+import Distribution.Types.Dependency (Dependency)
+import Distribution.Types.GenericPackageDescription (GenericPackageDescription)
+import Distribution.Types.UnqualComponentName (UnqualComponentName)
+import qualified Distribution.Types.Dependency as Dependency
+import qualified Distribution.Types.PackageName as PackageName
+import qualified Distribution.Types.UnqualComponentName as UnqualComponentName
 
 data BuildSystem = Stack | CabalProject | Cabal
   deriving (Eq, Ord, Bounded, Enum)
@@ -76,7 +82,7 @@ data DependencyName = DependencyName { unDependencyName :: Text }
 instance Show DependencyName where
   show = unpack . unDependencyName
 
--- |A qualified module name, like `Foo.Bar`
+-- |A qualified module name, like @Foo.Bar@
 data ModuleName = ModuleName { unModuleName :: Text }
   deriving (Eq, Ord)
 
@@ -96,12 +102,17 @@ data Compilable = Compilable
 
 data Package = Package
   { packageName :: Text
+  -- ^ The name of the package.
+  , packageFile :: FilePath
+  -- ^ The location of the cabal file.
+  , packageDescription :: GenericPackageDescription
+  -- ^ The path to the config file.
   , packageBaseDependencies :: Set DependencyName
   -- ^ The list of common dependencies.
   , packageCompilables :: [Compilable]
   -- ^ The things to compile in the package.
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Show)
 
 data StackYaml = StackYaml
   { stackYamlPackages :: [FilePath]
@@ -114,6 +125,47 @@ instance FromJSON StackYaml where
     StackYaml
       <$> obj .: "packages"
 
+data ShouldApply = ShouldNotApply | ShouldApply | ShouldApplyNoVerify
+  deriving (Eq, Ord, Bounded, Enum)
+
+instance Show ShouldApply where
+  show = \case
+    ShouldNotApply -> "no-apply"
+    ShouldApply -> "apply"
+    ShouldApplyNoVerify -> "apply-no-verify"
+
+validateShouldApply :: (Bool, Bool) -> ShouldApply
+validateShouldApply = \case
+  (_, True) -> ShouldApplyNoVerify
+  (True, False) -> ShouldApply
+  (False, False) -> ShouldNotApply
+
+allApply :: [ShouldApply]
+allApply = [minBound..maxBound]
+
+data ApplyStrategy = ApplyStrategySafe | ApplyStrategySmart
+  deriving (Eq, Ord, Bounded, Enum)
+
+instance Show ApplyStrategy where
+  show = \case
+    ApplyStrategySafe -> "safe"
+    ApplyStrategySmart -> "smart"
+
+parseApplyStrategy :: String -> Maybe ApplyStrategy
+parseApplyStrategy = \case
+  "safe" -> Just ApplyStrategySafe
+  "smart" -> Just ApplyStrategySmart
+  _ -> Nothing
+
+allApplyStrategies :: [ApplyStrategy]
+allApplyStrategies = [minBound..maxBound]
+
+mkDependencyName :: Dependency -> DependencyName
+mkDependencyName = DependencyName . pack . PackageName.unPackageName . Dependency.depPkgName
+
+mkCompilableName :: UnqualComponentName -> CompilableName
+mkCompilableName = CompilableName . pack . UnqualComponentName.unUnqualComponentName
+
 headMay :: [a] -> Maybe a
 headMay = \case
   [] -> Nothing
@@ -121,3 +173,12 @@ headMay = \case
 
 lastMay :: [a] -> Maybe a
 lastMay = headMay . reverse
+
+ifM :: Monad m => m Bool -> m a -> m a -> m a
+ifM b t f = do x <- b; if x then t else f
+
+whenM :: Monad m => m Bool -> m () -> m ()
+whenM b t = ifM b t (pure ())
+
+unlessM :: Monad m => m Bool -> m () -> m ()
+unlessM b = whenM (not <$> b)
