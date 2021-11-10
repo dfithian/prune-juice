@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Data.Prune.Cabal where
 
 import Prelude
@@ -35,6 +36,9 @@ import qualified Distribution.Types.PackageName as PackageName
 import qualified Distribution.Types.TestSuite as TestSuite
 import qualified Distribution.Types.TestSuiteInterface as TestSuiteInterface
 import qualified Distribution.Types.UnqualComponentName as UnqualComponentName
+#if MIN_VERSION_Cabal(3,6,0)
+import qualified Distribution.Utils.Path as UtilsPath
+#endif
 import qualified Distribution.Verbosity as Verbosity
 
 import qualified Data.Prune.Types as T
@@ -49,8 +53,14 @@ getSourceFiles fp mainMay buildInfo = do
   let hsSourceDirs = BuildInfo.hsSourceDirs buildInfo
   allFiles <- case null hsSourceDirs of
     True -> Set.filter (flip elem (takeFileName <$> maybeToList mainMay) . takeFileName) <$> listFilesRecursive fp
-    False -> fmap mconcat . for hsSourceDirs $ \dir -> listFilesRecursive $ fp </> dir
+    False -> fmap mconcat . for hsSourceDirs $ \dir -> listFilesRecursive $ fp </> dirToPath dir
   pure $ Set.filter (\fp2 -> any ($ fp2) [isExtensionOf "hs", isExtensionOf "lhs", isExtensionOf "hs-boot"]) allFiles
+  where
+#if MIN_VERSION_Cabal(3,6,0)
+    dirToPath = UtilsPath.getSymbolicPath
+#else
+    dirToPath = id
+#endif
 
 -- |Parse a library to compile.
 getLibraryCompilable :: FilePath -> Set T.DependencyName -> Text -> CondTree a [Dependency] Library -> IO T.Compilable
