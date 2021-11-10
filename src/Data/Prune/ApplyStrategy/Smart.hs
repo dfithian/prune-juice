@@ -20,7 +20,7 @@ data StripTarget
   | StripTargetCommonStanza (Set T.CommonName)
 
 dependencyNameRegex :: Regex
-dependencyNameRegex = mkRegex "^ *([a-zA-Z0-9]+).*$"
+dependencyNameRegex = mkRegex "^ *([a-zA-Z0-9\\-]+).*$"
 
 matchDependencyName :: String -> Maybe T.DependencyName
 matchDependencyName str = Just . T.DependencyName . pack =<< T.headMay =<< matchRegex dependencyNameRegex str
