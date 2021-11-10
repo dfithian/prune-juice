@@ -120,22 +120,18 @@ spec = describe "Data.Prune.Section.Parser" $ do
     input <- readCabalSections commonFile
     input `shouldBe` Right
       [ T.CommonSection (T.CommonName "global-options")
-          [ T.OtherNestedSection 2 ["default-language: Haskell2010"]
+          [ T.OtherNestedSection 2 ["default-language: Haskell2010", ""]
           ]
-      , T.OtherSection [""]
       , T.CommonSection (T.CommonName "options")
           [ T.ImportNestedSection 2 [" global-options"]
-          , T.BuildDependsNestedSection 2 [" base"]
+          , T.BuildDependsNestedSection 2 [" base", ""]
           ]
-      , T.OtherSection [""]
       , T.CommonSection (T.CommonName "global-exe-options")
-          [ T.OtherNestedSection 2 ["ghc-options: -threaded"]
+          [ T.OtherNestedSection 2 ["ghc-options: -threaded", ""]
           ]
-      , T.OtherSection [""]
       , T.TargetSection T.CompilableTypeLibrary Nothing
-          [ T.ImportNestedSection 2 [" options"]
+          [ T.ImportNestedSection 2 [" options", ""]
           ]
-      , T.OtherSection [""]
       , T.TargetSection T.CompilableTypeExecutable (Just (T.CompilableName "exe"))
           [ T.ImportNestedSection 2 [" options, global-exe-options"]
           ]

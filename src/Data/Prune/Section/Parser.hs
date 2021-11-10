@@ -21,6 +21,9 @@ targetName = T.CompilableName . pack <$> some (alphaNumChar <|> char '-')
 restOfLine :: Parser String
 restOfLine = many (noneOf ("\r\n" :: String)) <* eol
 
+emptyLine :: Parser String
+emptyLine = "" <$ eol
+
 indentedLine :: Int -> Parser String
 indentedLine numSpaces = do
   spaces <- many (char ' ')
@@ -30,7 +33,7 @@ indentedLine numSpaces = do
     False -> (spaces <>) <$> restOfLine
 
 indentedLines :: Int -> Parser [String]
-indentedLines numSpaces = (:) <$> restOfLine <*> many (try (indentedLine numSpaces))
+indentedLines numSpaces = (:) <$> restOfLine <*> many (try (indentedLine numSpaces <|> emptyLine))
 
 nestedSection :: Parser T.NestedSection
 nestedSection = do
