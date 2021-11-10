@@ -138,7 +138,7 @@ main = do
 
       apInit <- case optsStrategy of
         T.ApplyStrategySafe -> pure $ SomeApply $ ApplySafe packageFile packageDescription mempty
-        T.ApplyStrategySmart -> do 
+        T.ApplyStrategySmart -> do
           let onFailure str = do
                 liftIO $ putStrLn $ Confirm.err $ "Failed to parse cabal sections for " <> packageFile <> " due to " <> str
                 put $ ExitFailure 1
