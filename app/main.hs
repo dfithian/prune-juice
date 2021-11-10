@@ -36,7 +36,7 @@ data Opts = Opts
   , optsBuildSystem :: Maybe T.BuildSystem
   , optsApply :: Bool
   , optsNoVerify :: Bool
-  , optsApplyStrategy :: T.ApplyStrategy
+  , optsStrategy :: T.ApplyStrategy
   }
 
 defaultIgnoreList :: Set T.DependencyName
@@ -99,7 +99,7 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
         Opt.long "no-verify"
           <> Opt.help "Do not ask for verification when applying (implies --apply)" )
       <*> Opt.option (Opt.maybeReader T.parseApplyStrategy) (
-        Opt.long "apply-strategy"
+        Opt.long "strategy"
           <> Opt.help ("Strategy to use to apply (one of " <> show T.allApplyStrategies <> ")")
           <> Opt.value T.ApplyStrategySmart
           <> Opt.showDefault )
@@ -136,7 +136,7 @@ main = do
     dependencyByModule <- getDependencyByModule optsProjectRoot buildSystem packages
     flip execStateT ExitSuccess $ for_ packages $ \package@T.Package {..} -> do
 
-      apInit <- case optsApplyStrategy of
+      apInit <- case optsStrategy of
         T.ApplyStrategySafe -> pure $ SomeApply $ ApplySafe packageFile packageDescription mempty
         T.ApplyStrategySmart -> do 
           let onFailure str = do
