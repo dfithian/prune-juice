@@ -159,8 +159,7 @@ main = do
         False -> liftIO $ runApply targetsStrip package baseUnusedDependencies Nothing shouldApply
 
       when (targetsShouldFail || finalShouldFail) $ put $ ExitFailure 1
-      unless (shouldApply == T.ShouldNotApply) $ do
-        liftIO $ putStrLn $ Confirm.bold "Applying..."
+      unless (shouldApply == T.ShouldNotApply) $
         liftIO $ writeApply stripFinal
 
   exitWith code

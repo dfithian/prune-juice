@@ -16,6 +16,7 @@ extra-source-files:
     cabal.project
     prune-juice.cabal
     test/fixtures/ghc-pkg.txt
+    test/fixtures/test.cabal
 
 source-repository head
   type: git

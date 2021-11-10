@@ -35,9 +35,14 @@ indentedLines numSpaces = (:) <$> restOfLine <*> many (try (indentedLine numSpac
 nestedSection :: Parser T.NestedSection
 nestedSection = do
   numSpaces <- length <$> some (char ' ')
-  let buildDepends = T.BuildDependsNestedSection numSpaces <$> (void (string "build-depends:") *> indentedLines numSpaces)
+  let buildDepends = do
+        void $ string "build-depends:"
+        T.BuildDependsNestedSection numSpaces <$> indentedLines numSpaces
+      import_ = do
+        void $ string "import:"
+        T.ImportNestedSection numSpaces <$> indentedLines numSpaces
       other = T.OtherNestedSection numSpaces <$> indentedLines numSpaces
-  buildDepends <|> other
+  buildDepends <|> import_ <|> other
 
 nestedSections :: Parser [T.NestedSection]
 nestedSections = some nestedSection
@@ -56,12 +61,17 @@ section =
         hspace
         void eol
         T.TargetSection typ (Just name) <$> nestedSections
+      common = do
+        void $ string "common"
+        hspace1
+        name <- T.CommonName . pack <$> restOfLine
+        T.CommonSection name <$> nestedSections
       sublib = target T.CompilableTypeLibrary "library"
       exe = target T.CompilableTypeExecutable "executable"
       test = target T.CompilableTypeTest "test-suite"
       bench = target T.CompilableTypeBenchmark "benchmark"
       other = T.OtherSection <$> indentedLines 0
-  in lib <|> sublib <|> exe <|> test <|> bench <|> other
+  in lib <|> sublib <|> exe <|> test <|> bench <|> common <|> other
 
 sections :: Parser [T.Section]
 sections = some section
@@ -72,6 +82,10 @@ parseCabalSections = left show . parse sections ""
 renderCabalSections :: [T.Section] -> String
 renderCabalSections = foldr go mempty
   where
+    go2 next accum = case next of
+      T.BuildDependsNestedSection numSpaces dependencies -> replicate numSpaces ' ' <> "build-depends:" <> unlines dependencies <> accum
+      T.ImportNestedSection numSpaces imports -> replicate numSpaces ' ' <> "import:" <> unlines imports <> accum
+      T.OtherNestedSection numSpaces rest -> replicate numSpaces ' ' <> unlines rest <> accum
     go next accum =
       let str = case next of
             T.TargetSection compilableType compilableNameMay nested ->
@@ -83,10 +97,9 @@ renderCabalSections = foldr go mempty
                   sectionName = case compilableNameMay of
                     Nothing -> ""
                     Just (T.CompilableName name) -> " " <> unpack name
-                  renderSection next2 accum2 = case next2 of
-                    T.BuildDependsNestedSection numSpaces dependencies -> replicate numSpaces ' ' <> "build-depends:" <> unlines dependencies <> accum2
-                    T.OtherNestedSection numSpaces rest -> replicate numSpaces ' ' <> unlines rest <> accum2
-              in sectionType <> sectionName <> "\n" <> foldr renderSection mempty nested
+              in sectionType <> sectionName <> "\n" <> foldr go2 mempty nested
+            T.CommonSection (T.CommonName name) nested ->
+              "common " <> unpack name <> "\n" <> foldr go2 mempty nested
             T.OtherSection xs -> unlines xs
       in str <> accum
 

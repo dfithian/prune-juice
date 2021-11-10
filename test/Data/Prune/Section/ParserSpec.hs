@@ -14,31 +14,44 @@ import qualified Data.Prune.Types as T
 -- the module being tested
 import Data.Prune.Section.Parser
 
-buildDependsNestedSection, otherNestedSection :: T.NestedSection
+buildDependsNestedSection, importNestedSection, otherNestedSection :: T.NestedSection
 buildDependsNestedSection = T.BuildDependsNestedSection 2 ["", "    , base <5.0"]
+importNestedSection = T.ImportNestedSection 2 [" foo, bar"]
 otherNestedSection = T.OtherNestedSection 2 ["default-language: Haskell2010"]
 
-librarySection, executableSection, otherSection :: T.Section
-librarySection = T.TargetSection T.CompilableTypeLibrary Nothing [buildDependsNestedSection, otherNestedSection]
+librarySection, executableSection, commonSection, otherSection :: T.Section
+librarySection = T.TargetSection T.CompilableTypeLibrary Nothing [importNestedSection, buildDependsNestedSection, otherNestedSection]
 executableSection = T.TargetSection T.CompilableTypeExecutable (Just (T.CompilableName "prune-juice")) [buildDependsNestedSection, otherNestedSection]
+commonSection = T.CommonSection (T.CommonName "foo") [buildDependsNestedSection, otherNestedSection]
 otherSection = T.OtherSection ["name: prune-juice"]
 
-buildDependsNestedExample, otherNestedExample, libraryExample, executableExample, otherExample :: String
+buildDependsNestedExample, importNestedExample, otherNestedExample
+  , libraryExample, executableExample, commonExample, otherExample :: String
 buildDependsNestedExample = unlines
   [ "  build-depends:"
   , "    , base <5.0"
+  ]
+importNestedExample = unlines
+  [ "  import: foo, bar"
   ]
 otherNestedExample = unlines
   [ "  default-language: Haskell2010"
   ]
 libraryExample = unlines
   [ "library"
+  , "  import: foo, bar"
   , "  build-depends:"
   , "    , base <5.0"
   , "  default-language: Haskell2010"
   ]
 executableExample = unlines
   [ "executable prune-juice"
+  , "  build-depends:"
+  , "    , base <5.0"
+  , "  default-language: Haskell2010"
+  ]
+commonExample = unlines
+  [ "common foo"
   , "  build-depends:"
   , "    , base <5.0"
   , "  default-language: Haskell2010"
@@ -50,6 +63,7 @@ otherExample = unlines
 spec :: Spec
 spec = describe "Data.Prune.Section.Parser" $ do
   let cabalFile = $(fileRelativeToAbsolute "../../../../prune-juice.cabal")
+      commonFile = $(fileRelativeToAbsolute "../../../fixtures/test.cabal")
 
   it "should parse a target name" $
     parse targetName "" "prune-juice" `shouldBe` Right (T.CompilableName "prune-juice")
@@ -69,6 +83,9 @@ spec = describe "Data.Prune.Section.Parser" $ do
   it "should parse a build depends nested section" $
     parse nestedSection "" buildDependsNestedExample `shouldBe` Right buildDependsNestedSection
 
+  it "should parse an import nested section" $
+    parse nestedSection "" importNestedExample `shouldBe` Right importNestedSection
+
   it "should parse an other nested section" $
     parse nestedSection "" otherNestedExample `shouldBe` Right otherNestedSection
 
@@ -78,18 +95,48 @@ spec = describe "Data.Prune.Section.Parser" $ do
   it "should parse an executable section" $
     parse section "" executableExample `shouldBe` Right executableSection
 
+  it "should parse a common section" $
+    parse section "" commonExample `shouldBe` Right commonSection
+
   it "should parse an other section" $
     parse section "" otherExample `shouldBe` Right otherSection
 
   it "should parse multiple sections" $
-    parse sections "" (libraryExample <> executableExample <> otherExample) `shouldBe` Right [librarySection, executableSection, otherSection]
+    parse sections "" (libraryExample <> executableExample <> commonExample <> otherExample) `shouldBe` Right [librarySection, executableSection, commonSection, otherSection]
 
   it "should parse and output the same thing" $ do
     input <- readFile cabalFile
-    let output = either (const "") renderCabalSections $ parseCabalSections input
-    output `shouldBe` input
+    xs <- either fail pure $ parseCabalSections input
+    xs `shouldSatisfy` not . null
+    renderCabalSections xs `shouldBe` input
 
   it "should parse and output the same thing after applying a trivial change" $ do
     input <- readFile cabalFile
-    let output = either (const "") (\xs -> renderCabalSections (stripSections xs mempty Nothing)) $ parseCabalSections input
-    output `shouldBe` input
+    xs <- either fail (\ys -> pure (stripSections ys mempty Nothing)) $ parseCabalSections input
+    xs `shouldSatisfy` not . null
+    renderCabalSections xs `shouldBe` input
+
+  it "should parse a cabal file with common stanzas" $ do
+    input <- readCabalSections commonFile
+    input `shouldBe` Right
+      [ T.CommonSection (T.CommonName "global-options")
+          [ T.OtherNestedSection 2 ["default-language: Haskell2010"]
+          ]
+      , T.OtherSection [""]
+      , T.CommonSection (T.CommonName "options")
+          [ T.ImportNestedSection 2 [" global-options"]
+          , T.BuildDependsNestedSection 2 [" base"]
+          ]
+      , T.OtherSection [""]
+      , T.CommonSection (T.CommonName "global-exe-options")
+          [ T.OtherNestedSection 2 ["ghc-options: -threaded"]
+          ]
+      , T.OtherSection [""]
+      , T.TargetSection T.CompilableTypeLibrary Nothing
+          [ T.ImportNestedSection 2 [" options"]
+          ]
+      , T.OtherSection [""]
+      , T.TargetSection T.CompilableTypeExecutable (Just (T.CompilableName "exe"))
+          [ T.ImportNestedSection 2 [" options, global-exe-options"]
+          ]
+      ]
