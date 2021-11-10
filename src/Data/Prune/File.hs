@@ -1,3 +1,4 @@
+-- |Description: File utilities.
 module Data.Prune.File where
 
 import Prelude

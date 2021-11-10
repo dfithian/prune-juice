@@ -1,3 +1,4 @@
+-- |Description: Apply @prune-juice@ to cabal files safely, with the understanding that the file formatting will change.
 module Data.Prune.ApplyStrategy.Safe where
 
 import Prelude
@@ -61,6 +62,7 @@ stripBenchmark dependencies bench = bench
   { Benchmark.benchmarkBuildInfo = stripBuildInfo dependencies (Benchmark.benchmarkBuildInfo bench)
   }
 
+-- |Strip dependencies from a single target.
 stripCondTree :: (b -> b) -> CondTree a [Dependency] b -> CondTree a [Dependency] b
 stripCondTree f condTree = condTree
   { CondTree.condTreeData = f (CondTree.condTreeData condTree)

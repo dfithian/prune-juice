@@ -1,4 +1,4 @@
--- |Utilities for parsing imports from Haskell source files.
+-- |Description: Utilities for parsing imports from Haskell source files.
 module Data.Prune.ImportParser where
 
 import Prelude
@@ -72,14 +72,14 @@ parseFileImports fp = do
   left show . fmap Set.fromList . traverse (parse oneImport fp) . filter (isPrefixOf "import ") . lines
     <$> readFile fp
 
--- |Parse name from the `ghc-pkg` field description.
+-- |Parse name from the @ghc-pkg@ field description.
 parseDependencyName :: String -> Either String (Maybe T.DependencyName)
 parseDependencyName input =
   if null input
     then Right Nothing
     else left show . fmap Just . parse dependencyName "" $ input
 
--- |Parse exposed modules from the `ghc-pkg` field description.
+-- |Parse exposed modules from the @ghc-pkg@ field description.
 parseExposedModules :: String -> Either String (Set T.ModuleName)
 parseExposedModules input =
   if null input

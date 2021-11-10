@@ -1,4 +1,4 @@
--- |Types for pruning.
+-- |Description: Types for pruning.
 module Data.Prune.Types where
 
 import Prelude
@@ -82,7 +82,7 @@ data DependencyName = DependencyName { unDependencyName :: Text }
 instance Show DependencyName where
   show = unpack . unDependencyName
 
--- |A qualified module name, like `Foo.Bar`
+-- |A qualified module name, like @Foo.Bar@
 data ModuleName = ModuleName { unModuleName :: Text }
   deriving (Eq, Ord)
 
@@ -102,7 +102,9 @@ data Compilable = Compilable
 
 data Package = Package
   { packageName :: Text
+  -- ^ The name of the package.
   , packageFile :: FilePath
+  -- ^ The location of the cabal file.
   , packageDescription :: GenericPackageDescription
   -- ^ The path to the config file.
   , packageBaseDependencies :: Set DependencyName

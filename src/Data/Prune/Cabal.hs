@@ -1,3 +1,4 @@
+-- |Description: Utilities for extracting cabal info to the canonical types in "Data.Prune.Types".
 module Data.Prune.Cabal where
 
 import Prelude
@@ -131,6 +132,7 @@ parseCabalFiles packageDirs ignores packages = do
   $logDebug $ "Parsed packages " <> pack (show toReturn)
   pure toReturn
 
+-- |Find cabal files under the project root.
 findCabalFiles :: FilePath -> IO (T.BuildSystem, [FilePath])
 findCabalFiles projectRoot = do
   (T.Cabal,) . map takeDirectory . filter (isExtensionOf "cabal") . Set.toList <$> listFilesRecursive projectRoot

@@ -1,3 +1,4 @@
+-- |Description: Apply @prune-juice@ to cabal files, attempting to overwrite /only/ the dependencies portions.
 module Data.Prune.ApplyStrategy.Smart where
 
 import Prelude
@@ -14,17 +15,24 @@ import qualified Data.Set as Set
 import qualified Data.Prune.Section.Types as T
 import qualified Data.Prune.Types as T
 
+-- |A type for which target we're trying to strip.
 data StripTarget
   = StripTargetBaseLibrary
+  -- ^ The base library
   | StripTargetCompilable T.Compilable
+  -- ^ Any @library@, @executable@, @test-suite@, @benchmark@, etc stanza.
   | StripTargetCommonStanza (Set T.CommonName)
+  -- ^ Any @common@ stanza matching the set.
 
+-- |Regex for dependency names like @base <5.0@.
 dependencyNameRegex :: Regex
 dependencyNameRegex = mkRegex "^ *([a-zA-Z0-9\\-]+).*$"
 
+-- |Parse a dependency name from a string.
 matchDependencyName :: String -> Maybe T.DependencyName
 matchDependencyName str = Just . T.DependencyName . pack =<< T.headMay =<< matchRegex dependencyNameRegex str
 
+-- |Strip matching dependencies from a single line.
 stripOneBuildDepends :: String -> Set T.DependencyName -> Maybe String
 stripOneBuildDepends input dependencies =
   let output = intercalate "," . mapMaybe go . fmap unpack . splitOn "," . pack $ input
@@ -38,9 +46,11 @@ stripOneBuildDepends input dependencies =
         True -> Nothing
         False -> Just x
 
+-- |Strip matching dependencies from a @build-depends@ section.
 stripBuildDepends :: [String] -> Set T.DependencyName -> [String]
 stripBuildDepends buildDepends dependencies = mapMaybe (\x -> stripOneBuildDepends x dependencies) buildDepends
 
+-- |Strip matching dependencies from a nested section.
 stripNestedSection :: T.NestedSection -> Set T.DependencyName -> (T.NestedSection, Set T.CommonName)
 stripNestedSection nested dependencies = case nested of
   T.BuildDependsNestedSection numSpaces buildDepends -> (T.BuildDependsNestedSection numSpaces (stripBuildDepends buildDepends dependencies), mempty)
@@ -49,9 +59,11 @@ stripNestedSection nested dependencies = case nested of
     in (T.ImportNestedSection numSpaces imports, common)
   other -> (other, mempty)
 
+-- |Strip matching dependencies from many nested sections.
 stripNestedSections :: [T.NestedSection] -> Set T.DependencyName -> ([T.NestedSection], Set T.CommonName)
 stripNestedSections nested dependencies = second mconcat $ unzip $ fmap (\x -> stripNestedSection x dependencies) nested
 
+-- |Strip dependencies from any top-level section.
 stripSection :: T.Section -> Set T.DependencyName -> StripTarget -> (T.Section, Set T.CommonName)
 stripSection section dependencies target = case (section, target) of
   (T.TargetSection T.CompilableTypeLibrary Nothing nested, StripTargetBaseLibrary) ->
@@ -65,6 +77,7 @@ stripSection section dependencies target = case (section, target) of
     in (T.CommonSection name newNested, newCommon)
   (other, _) -> (other, mempty)
 
+-- |Strip dependencies from many top-level sections.
 stripSections :: [T.Section] -> Set T.DependencyName -> Maybe T.Compilable -> [T.Section]
 stripSections sections dependencies compilableMay =
   let run target = second mconcat . unzip . fmap (\x -> stripSection x dependencies target)

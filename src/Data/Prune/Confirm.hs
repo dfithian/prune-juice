@@ -1,3 +1,4 @@
+-- |Description: IO utilities for user interaction.
 module Data.Prune.Confirm where
 
 import Prelude
@@ -11,6 +12,7 @@ err = unpack . Text.ANSI.bold . Text.ANSI.red . pack
 warn = unpack . Text.ANSI.bold . Text.ANSI.yellow . pack
 bold = unpack . Text.ANSI.bold . pack
 
+-- |Require the user to confirm before continuing.
 confirm :: String -> IO Bool
 confirm msg = do
   putStrLn $ bold msg

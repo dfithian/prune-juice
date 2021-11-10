@@ -1,4 +1,4 @@
--- |Load dependencies for a project using `ghc-pkg`.
+-- |Description: Load dependencies for a project using @ghc-pkg@.
 module Data.Prune.Dependency where
 
 import Prelude hiding (unwords, words)
@@ -21,6 +21,7 @@ import qualified Data.Set as Set
 import Data.Prune.ImportParser (parseDependencyName, parseExposedModules)
 import qualified Data.Prune.Types as T
 
+-- |Parse a single package output from @ghc-pkg@.
 parsePkg :: (MonadLogger m) => Text -> m (Maybe (T.DependencyName, Set T.ModuleName))
 parsePkg s = do
   let dependencyNameInput = unpack . unwords . dropWhile (not . (==) "name:") . words . strip $ s
@@ -37,6 +38,7 @@ parsePkg s = do
     Right x -> pure x
   pure $ (, moduleNames) <$> dependencyNameMay
 
+-- |Get the combined dump for the locations cabal uses for @ghc-pkg@.
 getCabalRawGhcPkgs :: FilePath -> IO String
 getCabalRawGhcPkgs projectRoot = do
   cabalConfig <- readConfig
@@ -53,10 +55,11 @@ getCabalRawGhcPkgs projectRoot = do
     False -> pure Nothing
   pure . intercalate "\n---\n" . catMaybes $ [Just defaultPkgs, Just cabalPkgs, localPkgs]
 
+-- |Get the combined dump for the locations stack uses for @ghc-pkg@.
 getStackRawGhcPkgs :: IO String
 getStackRawGhcPkgs = readProcess "stack" ["exec", "ghc-pkg", "dump"] ""
 
--- |For the dependencies listed in the specified packages, load `ghc-pkg` and inspect the `exposed-modules` field.
+-- |For the dependencies listed in the specified packages, load @ghc-pkg@ and inspect the @exposed-modules@ field.
 -- Return a map of module to dependency name.
 getDependencyByModule :: (MonadIO m, MonadLogger m) => FilePath -> T.BuildSystem -> [T.Package] -> m (Map T.ModuleName (Set T.DependencyName))
 getDependencyByModule projectRoot buildSystem packages = do

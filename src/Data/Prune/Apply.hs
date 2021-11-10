@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilyDependencies #-}
+-- |Description: Apply changes according to the provided 'T.ApplyStrategy'.
 module Data.Prune.Apply where
 
 import Prelude
@@ -19,14 +19,17 @@ import qualified Data.Prune.Confirm as Confirm
 import qualified Data.Prune.Section.Types as T
 import qualified Data.Prune.Types as T
 
+-- |Continuation GADT for applying changes to a cabal file.
 data Apply (a :: T.ApplyStrategy) where
   ApplySafe :: FilePath -> GenericPackageDescription -> Endo GenericPackageDescription -> Apply 'T.ApplyStrategySafe
   ApplySmart :: FilePath -> [T.Section] -> Endo [T.Section] -> Apply 'T.ApplyStrategySmart
 
+-- |Wrap 'Apply' in a data type so that it can be passed to functions without escaping the inner type.
 data SomeApply = forall (a :: T.ApplyStrategy). SomeApply { unSomeApply :: Apply a }
 
+-- |Iterate on a cabal file by pruning one target at a time. Return whether the command-line call to @prune-juice@ should fail.
 runApply :: SomeApply -> T.Package -> Set T.DependencyName -> Maybe T.Compilable -> T.ShouldApply -> IO (Bool, SomeApply)
-runApply (SomeApply ap) T.Package {..} dependencies compilableMay = \case 
+runApply (SomeApply ap) T.Package {..} dependencies compilableMay = \case
   T.ShouldNotApply -> do
     printDependencies
     pure (True, applyNoop)
@@ -53,6 +56,7 @@ runApply (SomeApply ap) T.Package {..} dependencies compilableMay = \case
       ApplySafe x y z -> SomeApply $ ApplySafe x y $ z <> Endo (\w -> stripGenericPackageDescription w dependencies compilableMay)
       ApplySmart x y z -> SomeApply $ ApplySmart x y $ z <> Endo (\w -> stripSections w dependencies compilableMay)
 
+-- |Write the series of changes to the cabal file.
 writeApply :: SomeApply -> IO ()
 writeApply (SomeApply ap) = case ap of
   ApplySafe fp description endo -> writeGenericPackageDescription fp (appEndo endo description)

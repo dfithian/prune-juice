@@ -1,3 +1,4 @@
+-- |Description: Parser for the "Data.Prune.ApplyStrategy.Smart" strategy.
 module Data.Prune.Section.Parser where
 
 import Prelude
@@ -24,6 +25,7 @@ restOfLine = many (noneOf ("\r\n" :: String)) <* eol
 emptyLine :: Parser String
 emptyLine = "" <$ eol
 
+-- |Parse an indented line with @indentedLine numSpaces@, failing if the line isn't indented to @numSpaces@.
 indentedLine :: Int -> Parser String
 indentedLine numSpaces = do
   spaces <- many (char ' ')
@@ -32,6 +34,7 @@ indentedLine numSpaces = do
     True -> fail $ "indentation: " <> show n <> " (expected " <> show numSpaces <> ")"
     False -> (spaces <>) <$> restOfLine
 
+-- |Parse many indented lines with @indentedLines numSpaces@, traversing empty lines until the line isn't indented to @numSpaces@.
 indentedLines :: Int -> Parser [String]
 indentedLines numSpaces = (:) <$> restOfLine <*> many (try (indentedLine numSpaces <|> emptyLine))
 
@@ -79,9 +82,11 @@ section =
 sections :: Parser [T.Section]
 sections = some section
 
+-- |Parse using 'sections'.
 parseCabalSections :: String -> Either String [T.Section]
 parseCabalSections = left show . parse sections ""
 
+-- |Render sections. @parseCabalSections . renderCabalSections@ should be equivalent to @Right@.
 renderCabalSections :: [T.Section] -> String
 renderCabalSections = foldr go mempty
   where
@@ -106,8 +111,10 @@ renderCabalSections = foldr go mempty
             T.OtherSection xs -> unlines xs
       in str <> accum
 
+-- |Read sections from a file using 'parseCabalSections'.
 readCabalSections :: FilePath -> IO (Either String [T.Section])
 readCabalSections cabalFile = parseCabalSections <$> readFile cabalFile
 
+-- |Write sections to a file using 'renderCabalSections'.
 writeCabalSections :: FilePath -> [T.Section] -> IO ()
 writeCabalSections cabalFile = writeFile cabalFile . renderCabalSections
