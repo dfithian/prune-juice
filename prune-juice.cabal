@@ -1,4 +1,4 @@
-cabal-version: 1.12
+cabal-version:  3.0
 name:           prune-juice
 version:        0.7
 synopsis:       Prune unused Haskell dependencies
@@ -22,24 +22,13 @@ source-repository head
   type: git
   location: https://github.com/dfithian/prune-juice
 
-library
-  exposed-modules:
-      Data.Prune.Apply
-      Data.Prune.Cabal
-      Data.Prune.ApplyStrategy.Safe
-      Data.Prune.ApplyStrategy.Smart
-      Data.Prune.Confirm
-      Data.Prune.Dependency
-      Data.Prune.File
-      Data.Prune.ImportParser
-      Data.Prune.Section.Parser
-      Data.Prune.Section.Types
-      Data.Prune.Stack
-      Data.Prune.Types
-  other-modules:
-      Paths_prune_juice
-  hs-source-dirs:
-      src
+common ghc-options
+  ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
+
+common ghc-exe-options
+  ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog -threaded -rtsopts "-with-rtsopts=-N -T"
+
+common options
   default-extensions:
       ConstraintKinds
       DataKinds
@@ -71,7 +60,6 @@ library
       TypeFamilies
       TypeOperators
       ViewPatterns
-  ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
       Cabal
     , aeson
@@ -91,65 +79,40 @@ library
     , yaml
   default-language: Haskell2010
 
+library
+  import: options, ghc-options
+  exposed-modules:
+      Data.Prune.Apply
+      Data.Prune.Cabal
+      Data.Prune.ApplyStrategy.Safe
+      Data.Prune.ApplyStrategy.Smart
+      Data.Prune.Confirm
+      Data.Prune.Dependency
+      Data.Prune.File
+      Data.Prune.ImportParser
+      Data.Prune.Section.Parser
+      Data.Prune.Section.Types
+      Data.Prune.Stack
+      Data.Prune.Types
+  other-modules:
+      Paths_prune_juice
+  hs-source-dirs:
+      src
+
 executable prune-juice
+  import: options, ghc-exe-options
   main-is: main.hs
   other-modules:
       Paths_prune_juice
   hs-source-dirs:
       app
-  default-extensions:
-      ConstraintKinds
-      DataKinds
-      DefaultSignatures
-      DeriveDataTypeable
-      DeriveGeneric
-      DerivingStrategies
-      DerivingVia
-      EmptyDataDecls
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      LambdaCase
-      MultiParamTypeClasses
-      MultiWayIf
-      NamedFieldPuns
-      NoImplicitPrelude
-      NoMonomorphismRestriction
-      OverloadedStrings
-      QuasiQuotes
-      RankNTypes
-      RecordWildCards
-      ScopedTypeVariables
-      StandaloneDeriving
-      TemplateHaskell
-      TupleSections
-      TypeApplications
-      TypeFamilies
-      TypeOperators
-      ViewPatterns
   ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
-      Cabal
-    , aeson
-    , base <5.0
-    , bytestring
-    , cabal-install-parsers
-    , containers
-    , directory
-    , filepath
-    , megaparsec
-    , monad-logger
-    , mtl
     , optparse-applicative
-    , process
     , prune-juice
-    , text
-    , text-ansi
-    , yaml
-  default-language: Haskell2010
 
 test-suite test
+  import: options, ghc-exe-options
   type: exitcode-stdio-1.0
   main-is: main.hs
   other-modules:
@@ -161,55 +124,9 @@ test-suite test
       Paths_prune_juice
   hs-source-dirs:
       test
-  default-extensions:
-      ConstraintKinds
-      DataKinds
-      DefaultSignatures
-      DeriveDataTypeable
-      DeriveGeneric
-      DerivingStrategies
-      DerivingVia
-      EmptyDataDecls
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      LambdaCase
-      MultiParamTypeClasses
-      MultiWayIf
-      NamedFieldPuns
-      NoImplicitPrelude
-      NoMonomorphismRestriction
-      OverloadedStrings
-      QuasiQuotes
-      RankNTypes
-      RecordWildCards
-      ScopedTypeVariables
-      StandaloneDeriving
-      TemplateHaskell
-      TupleSections
-      TypeApplications
-      TypeFamilies
-      TypeOperators
-      ViewPatterns
   ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
-      Cabal
-    , aeson
-    , base <5.0
-    , bytestring
-    , cabal-install-parsers
-    , containers
-    , directory
     , file-embed
     , file-path-th
-    , filepath
     , hspec
-    , megaparsec
-    , monad-logger
-    , mtl
-    , process
     , prune-juice
-    , text
-    , yaml
-  default-language: Haskell2010
