@@ -94,16 +94,12 @@ library
       Data.Prune.Section.Types
       Data.Prune.Stack
       Data.Prune.Types
-  other-modules:
-      Paths_prune_juice
   hs-source-dirs:
       src
 
 executable prune-juice
   import: options, ghc-exe-options
   main-is: main.hs
-  other-modules:
-      Paths_prune_juice
   hs-source-dirs:
       app
   ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
@@ -121,7 +117,6 @@ test-suite test
       Data.Prune.DependencySpec
       Data.Prune.ImportParserSpec
       Data.Prune.Section.ParserSpec
-      Paths_prune_juice
   hs-source-dirs:
       test
   ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
