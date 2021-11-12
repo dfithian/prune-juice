@@ -21,7 +21,7 @@ in other unexpected ways.
 
 ## Usage
 
-```bash
+```
 $ stack install
 $ prune-juice --help
 Usage: prune-juice [--project-root PROJECT_ROOT] [--no-default-ignore]
