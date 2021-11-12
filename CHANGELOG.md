@@ -1,3 +1,8 @@
+## 0.7
+
+* Apply changes to `cabal` files (`hpack` not supported)
+* Support Cabal 3.6
+
 ## 0.6
 
 * Better support for Cabal
