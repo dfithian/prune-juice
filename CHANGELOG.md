@@ -1,7 +1,8 @@
 ## 0.7
 
 * Apply changes to `cabal` files (`hpack` not supported)
-* Support Cabal 3.6
+* Support Cabal 3.6 (thanks @yaitskov!)
+* Better parsing for ghc-pkg output (thanks @liftM!)
 
 ## 0.6
 

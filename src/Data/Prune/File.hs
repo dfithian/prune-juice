@@ -3,6 +3,7 @@ module Data.Prune.File where
 
 import Prelude
 
+import Control.Applicative ((<|>))
 import Data.Set (Set)
 import Data.Traversable (for)
 import System.Directory (doesDirectoryExist, listDirectory, pathIsSymbolicLink)
@@ -12,7 +13,7 @@ import qualified Data.Set as Set
 -- |Recursively list files in a directory, ignoring symlinks.
 listFilesRecursive :: FilePath -> IO (Set FilePath)
 listFilesRecursive dir = do
-  dirs <- listDirectory dir
+  dirs <- listDirectory dir <|> pure mempty
   fmap mconcat . for dirs $ \case
     -- don't include "hidden" directories, i.e. those that start with a '.'
     '.' : _ -> pure mempty
