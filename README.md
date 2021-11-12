@@ -1,6 +1,6 @@
 # Prune Juice
 
-[![Build Status](https://travis-ci.com/dfithian/prune-juice.svg?branch=main)](https://travis-ci.com/dfithian/prune-juice)
+![Build Status](https://github.com/dfithian/prune-juice/actions/workflows/workflow.yml/badge.svg)
 
 Prune unused Haskell dependencies from a Haskell project. Parses `.cabal` files using either `stack.yaml` or
 `cabal.project` (whichever is available), and `ghc-pkg` to load the `exposed-modules` fields of all the direct
