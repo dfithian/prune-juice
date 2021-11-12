@@ -11,32 +11,37 @@ import Data.List (intercalate)
 import Data.Map (Map)
 import Data.Maybe (catMaybes)
 import Data.Set (Set)
-import Data.Text (Text, pack, splitOn, strip, unpack, unwords, words)
+import Data.Text (Text, pack, splitOn, strip, unpack, words)
+import Data.Text.Encoding (encodeUtf8)
+import Distribution.InstalledPackageInfo (parseInstalledPackageInfo)
 import System.Directory (doesDirectoryExist)
 import System.FilePath.Posix ((</>))
 import System.Process (readProcess)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Distribution.InstalledPackageInfo as InstalledPackageInfo
+import qualified Distribution.ModuleName as ModuleName
+import qualified Distribution.Types.ExposedModule as ExposedModule
+import qualified Distribution.Types.PackageId as PackageId
+import qualified Distribution.Types.PackageName as PackageName
 
-import Data.Prune.ImportParser (parseDependencyName, parseExposedModules)
 import qualified Data.Prune.Types as T
 
 -- |Parse a single package output from @ghc-pkg@.
 parsePkg :: (MonadLogger m) => Text -> m (Maybe (T.DependencyName, Set T.ModuleName))
-parsePkg s = do
-  let dependencyNameInput = unpack . unwords . dropWhile (not . (==) "name:") . words . strip $ s
-      moduleNamesInput = unpack . unwords . dropWhile (not . (==) "exposed-modules:") . words . strip $ s
-  dependencyNameMay <- case parseDependencyName dependencyNameInput of
-    Left err -> do
-      $logError $ "Failed to parse dependency name due to " <> pack (show err) <> "; original input " <> pack dependencyNameInput
-      pure Nothing
-    Right x -> pure x
-  moduleNames <- case parseExposedModules moduleNamesInput of
-    Left err -> do
-      $logError $ "Failed to parse module names due to " <> pack (show err) <> "; original input " <> pack moduleNamesInput
-      pure mempty
-    Right x -> pure x
-  pure $ (, moduleNames) <$> dependencyNameMay
+parsePkg s = case parseInstalledPackageInfo (encodeUtf8 s) of
+  Left err -> do
+    $logError $ "Failed to parse package due to " <> pack (show err) <> "; original input " <> s
+    pure Nothing
+  Right (_, installedPackageInfo) ->
+    let packageName = PackageName.unPackageName . PackageId.pkgName . InstalledPackageInfo.sourcePackageId $ installedPackageInfo
+        moduleNames = Set.fromList . fmap (T.ModuleName . pack . intercalate "." . ModuleName.components . ExposedModule.exposedName) . InstalledPackageInfo.exposedModules $ installedPackageInfo
+    in case null packageName of
+      True -> do
+        $logError $ "Failed to parse package because the name was missing; original input " <> s
+        pure Nothing
+      False ->
+        pure $ Just (T.DependencyName $ pack packageName, moduleNames)
 
 -- |Get the combined dump for the locations cabal uses for @ghc-pkg@.
 getCabalRawGhcPkgs :: FilePath -> IO String
