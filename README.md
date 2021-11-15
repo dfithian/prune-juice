@@ -53,6 +53,7 @@ Available options:
                            --apply)
   --strategy ARG           Strategy to use to apply (one of [safe,smart])
                            (default: smart)
+  --version                Show version and exit
 ```
 
 ## Known issues

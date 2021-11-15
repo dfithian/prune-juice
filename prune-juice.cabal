@@ -101,6 +101,8 @@ library
 executable prune-juice
   import: options, ghc-exe-options
   main-is: main.hs
+  other-modules:
+      Paths_prune_juice
   hs-source-dirs:
       app
   build-depends:

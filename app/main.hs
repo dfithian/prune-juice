@@ -10,6 +10,7 @@ import Control.Monad.State (execStateT, put)
 import Data.Foldable (foldrM, for_)
 import Data.Set (Set)
 import Data.Text (Text, pack)
+import Data.Version (showVersion)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import System.FilePath.Posix ((</>))
 import System.IO (stdout)
@@ -25,6 +26,7 @@ import Data.Prune.Section.Parser (readCabalSections)
 import Data.Prune.Stack (parseStackYaml)
 import qualified Data.Prune.Confirm as Confirm
 import qualified Data.Prune.Types as T
+import qualified Paths_prune_juice
 
 data Opts = Opts
   { optsProjectRoot :: FilePath
@@ -37,6 +39,7 @@ data Opts = Opts
   , optsApply :: Bool
   , optsNoVerify :: Bool
   , optsStrategy :: T.ApplyStrategy
+  , optsVersion :: Bool
   }
 
 defaultIgnoreList :: Set T.DependencyName
@@ -103,10 +106,17 @@ parseArgs = Opt.execParser (Opt.info (Opt.helper <*> parser) $ Opt.progDesc "Pru
           <> Opt.help ("Strategy to use to apply (one of " <> show T.allApplyStrategies <> ")")
           <> Opt.value T.ApplyStrategySmart
           <> Opt.showDefault )
+      <*> Opt.switch (
+        Opt.long "version"
+          <> Opt.help "Show version and exit" )
 
 main :: IO ()
 main = do
   Opts {..} <- parseArgs
+
+  when optsVersion $ do
+    putStrLn $ "prune-juice " <> showVersion Paths_prune_juice.version
+    exitWith ExitSuccess
 
   let shouldApply = T.validateShouldApply (optsApply, optsNoVerify)
 
