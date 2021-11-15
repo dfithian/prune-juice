@@ -21,7 +21,7 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Please complete the following information:**
- - Version [e.g. 0.7]
+ - Version (`prune-juice --version`)
 
 **Additional context**
 Add any other context about the problem here.
