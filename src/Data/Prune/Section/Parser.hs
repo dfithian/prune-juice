@@ -6,6 +6,7 @@ import Prelude
 import Control.Applicative ((<|>))
 import Control.Arrow (left)
 import Control.Monad (void)
+import Data.List (isSuffixOf)
 import Data.Text (pack, unpack)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, many, noneOf, parse, some, try)
@@ -111,9 +112,15 @@ renderCabalSections = foldr go mempty
             T.OtherSection xs -> unlines xs
       in str <> accum
 
+-- |Append a trailing newline if it doesn't exist.
+appendTrailingNewline :: String -> String
+appendTrailingNewline input = case isSuffixOf "\n" input of
+  True -> input
+  False -> input <> "\n"
+
 -- |Read sections from a file using 'parseCabalSections'.
 readCabalSections :: FilePath -> IO (Either String [T.Section])
-readCabalSections cabalFile = parseCabalSections <$> readFile cabalFile
+readCabalSections cabalFile = parseCabalSections . appendTrailingNewline <$> readFile cabalFile
 
 -- |Write sections to a file using 'renderCabalSections'.
 writeCabalSections :: FilePath -> [T.Section] -> IO ()
