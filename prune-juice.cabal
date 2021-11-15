@@ -1,6 +1,6 @@
 cabal-version:  3.0
 name:           prune-juice
-version:        0.7
+version:        0.7.1
 synopsis:       Prune unused Haskell dependencies
 description:    Prune unused Haskell dependencies - see README at <https://github.com/dfithian/prune-juice#readme>
 category:       Development
@@ -61,22 +61,22 @@ common options
       TypeOperators
       ViewPatterns
   build-depends:
-      Cabal
-    , aeson
-    , base <5.0
-    , bytestring
-    , cabal-install-parsers
-    , containers
-    , directory
-    , filepath
-    , megaparsec
-    , monad-logger
-    , mtl
-    , process
-    , regex-compat
-    , text
-    , text-ansi
-    , yaml
+      Cabal >= 3.2.1.0 && < 3.3
+    , aeson >= 1.5.6.0 && < 1.6
+    , base < 5.0
+    , bytestring >= 0.10.12.0 && < 0.11
+    , cabal-install-parsers >= 0.4 && < 0.5
+    , containers >= 0.6.5.1 && < 0.7
+    , directory >= 1.3.6.0 && < 1.4
+    , filepath >= 1.4.2.1 && < 1.5
+    , megaparsec >= 9.0.1 && < 9.1
+    , monad-logger >= 0.3.36 && < 0.4
+    , mtl >= 2.2.2 && < 2.3
+    , process >= 1.6.13.2 && < 1.7
+    , regex-compat >= 0.95.2.1 && < 0.96
+    , text >= 1.2.4.1 && < 1.3
+    , text-ansi >= 0.1.1 && < 0.2
+    , yaml >= 0.11.6.0 && < 0.12
   default-language: Haskell2010
 
 library
@@ -104,7 +104,7 @@ executable prune-juice
       app
   ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
-    , optparse-applicative
+    , optparse-applicative >= 0.16.1.0 && < 0.17
     , prune-juice
 
 test-suite test
@@ -121,7 +121,7 @@ test-suite test
       test
   ghc-options: -Wall -fwarn-tabs -fwarn-redundant-constraints -Wincomplete-uni-patterns -eventlog
   build-depends:
-    , file-embed
-    , file-path-th
-    , hspec
+    , file-embed >= 0.0.15.0 && < 0.1
+    , file-path-th >= 0.1.0.0 && < 0.2
+    , hspec >= 2.7.10 && < 2.8
     , prune-juice
