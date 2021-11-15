@@ -1,3 +1,9 @@
+## 0.7.1
+
+* Version bounds for Cabal
+* Fix a broken parser (missing trailing newline)
+* When parsing fails, don't output an empty file
+
 ## 0.7
 
 * Apply changes to `cabal` files (`hpack` not supported)
