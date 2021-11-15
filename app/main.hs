@@ -142,9 +142,9 @@ main = do
           let onFailure str = do
                 liftIO $ putStrLn $ Confirm.err $ "Failed to parse cabal sections for " <> packageFile <> " due to " <> str
                 put $ ExitFailure 1
-                pure mempty
-          sections <- either onFailure pure =<< liftIO (readCabalSections packageFile)
-          pure $ SomeApply $ ApplySmart packageFile sections mempty
+                pure Nothing
+          sectionsMay <- either onFailure (pure . Just) =<< liftIO (readCabalSections packageFile)
+          pure $ SomeApply $ ApplySmart packageFile sectionsMay mempty
 
       let addSelf = if optsNoIgnoreSelf then id else Set.insert (T.DependencyName packageName)
           runCompilable compilable@T.Compilable {..} (oldShouldFail, oldUsed, oldStrip) = do

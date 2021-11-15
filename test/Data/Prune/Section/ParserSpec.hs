@@ -64,6 +64,7 @@ spec :: Spec
 spec = describe "Data.Prune.Section.Parser" $ do
   let cabalFile = $(fileRelativeToAbsolute "../../../../prune-juice.cabal")
       commonFile = $(fileRelativeToAbsolute "../../../fixtures/test.cabal")
+      noNewlineFile = $(fileRelativeToAbsolute "../../../fixtures/test-no-newline.cabal")
 
   it "should parse a target name" $
     parse targetName "" "prune-juice" `shouldBe` Right (T.CompilableName "prune-juice")
@@ -135,4 +136,10 @@ spec = describe "Data.Prune.Section.Parser" $ do
       , T.TargetSection T.CompilableTypeExecutable (Just (T.CompilableName "exe"))
           [ T.ImportNestedSection 2 [" options, global-exe-options"]
           ]
+      ]
+
+  it "should parse a cabal file with no trailing newlines" $ do
+    input <- readCabalSections noNewlineFile
+    input `shouldBe` Right
+      [ T.OtherSection ["name: test"]
       ]

@@ -22,7 +22,7 @@ import qualified Data.Prune.Types as T
 -- |Continuation GADT for applying changes to a cabal file.
 data Apply (a :: T.ApplyStrategy) where
   ApplySafe :: FilePath -> GenericPackageDescription -> Endo GenericPackageDescription -> Apply 'T.ApplyStrategySafe
-  ApplySmart :: FilePath -> [T.Section] -> Endo [T.Section] -> Apply 'T.ApplyStrategySmart
+  ApplySmart :: FilePath -> Maybe [T.Section] -> Endo [T.Section] -> Apply 'T.ApplyStrategySmart
 
 -- |Wrap 'Apply' in a data type so that it can be passed to functions without escaping the inner type.
 data SomeApply = forall (a :: T.ApplyStrategy). SomeApply { unSomeApply :: Apply a }
@@ -60,4 +60,6 @@ runApply (SomeApply ap) T.Package {..} dependencies compilableMay = \case
 writeApply :: SomeApply -> IO ()
 writeApply (SomeApply ap) = case ap of
   ApplySafe fp description endo -> writeGenericPackageDescription fp (appEndo endo description)
-  ApplySmart fp parsed endo -> writeCabalSections fp (appEndo endo parsed)
+  ApplySmart fp parsedMay endo -> case parsedMay of
+    Nothing -> putStrLn . Confirm.warn $ "Skipping " <> fp <> " since it failed to parse"
+    Just parsed -> writeCabalSections fp (appEndo endo parsed)
