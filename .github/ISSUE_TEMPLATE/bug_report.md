@@ -21,7 +21,9 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Please complete the following information:**
- - Version (`prune-juice --version`)
+ - `prune-juice` version (`prune-juice --version`)
+ - `cabal` or `stack` version
+ - `ghc` version
 
 **Additional context**
 Add any other context about the problem here.
