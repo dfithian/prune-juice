@@ -7,11 +7,12 @@ import Prelude
 import Cabal.Project (prjPackages, readProject)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Logger (MonadLogger, logDebug)
+import Data.List (isSuffixOf)
 import Data.Maybe (maybeToList)
-import Data.Prune.File (listFilesRecursive)
 import Data.Set (Set)
 import Data.Text (Text, pack)
 import Data.Traversable (for)
+import Distribution.ModuleName (ModuleName)
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
 import Distribution.Types.Benchmark (Benchmark)
 import Distribution.Types.BuildInfo (BuildInfo)
@@ -22,8 +23,9 @@ import Distribution.Types.Library (Library)
 import Distribution.Types.TestSuite (TestSuite)
 import Distribution.Types.UnqualComponentName (UnqualComponentName)
 import System.Directory (listDirectory)
-import System.FilePath.Posix ((</>), isExtensionOf, takeDirectory, takeFileName)
+import System.FilePath.Posix ((</>), dropExtension, isExtensionOf, takeDirectory, takeFileName)
 import qualified Data.Set as Set
+import qualified Distribution.ModuleName as ModuleName
 import qualified Distribution.Types.Benchmark as Benchmark
 import qualified Distribution.Types.BenchmarkInterface as BenchmarkInterface
 import qualified Distribution.Types.BuildInfo as BuildInfo
@@ -42,6 +44,7 @@ import qualified Distribution.Utils.Path as UtilsPath
 #endif
 import qualified Distribution.Verbosity as Verbosity
 
+import Data.Prune.File (listFilesRecursive)
 import qualified Data.Prune.Types as T
 
 -- |Get the dependencies for a thing to compile.
@@ -49,17 +52,19 @@ getDependencyNames :: Set T.DependencyName -> [Dependency] -> Set T.DependencyNa
 getDependencyNames ignores = flip Set.difference ignores . Set.fromList . map T.mkDependencyName
 
 -- |Get the Haskell source files to compile.
-getSourceFiles :: FilePath -> Maybe FilePath -> BuildInfo -> IO (Set FilePath)
-getSourceFiles fp mainMay buildInfo = do
+getSourceFiles :: FilePath -> Maybe FilePath -> [ModuleName] -> BuildInfo -> IO (Set FilePath)
+getSourceFiles fp mainMay exposedModules buildInfo = do
   let hsSourceDirs = BuildInfo.hsSourceDirs buildInfo
+      moduleFiles = ModuleName.toFilePath <$> (exposedModules <> BuildInfo.otherModules buildInfo)
+      isHaskellFile fp2 = any ($ fp2) [isExtensionOf "hs", isExtensionOf "lhs", isExtensionOf "hs-boot"]
+      isModuleFile fp2 = any (\fp3 -> fp3 `isSuffixOf` dropExtension fp2) moduleFiles
   allFiles <- case null hsSourceDirs of
     True ->
       -- if main is empty, this is a library so we can consider all files.
-      -- FIXME this should really use exposed-modules/other-modules, but it's a shim for now.
       Set.filter (maybe (const True) (\main -> flip elem [takeFileName main]) mainMay . takeFileName)
         <$> listFilesRecursive fp
     False -> fmap mconcat . for hsSourceDirs $ \dir -> listFilesRecursive $ fp </> dirToPath dir
-  pure $ Set.filter (\fp2 -> any ($ fp2) [isExtensionOf "hs", isExtensionOf "lhs", isExtensionOf "hs-boot"]) allFiles
+  pure $ Set.filter (\fp2 -> isHaskellFile fp2 && isModuleFile fp2) allFiles
   where
 #if MIN_VERSION_Cabal(3,6,0)
     dirToPath = UtilsPath.getSymbolicPath
@@ -71,7 +76,8 @@ getSourceFiles fp mainMay buildInfo = do
 getLibraryCompilable :: FilePath -> Set T.DependencyName -> UnqualComponentName -> CondTree a [Dependency] Library -> IO T.Compilable
 getLibraryCompilable fp ignores name tree = do
   let compilableName = T.mkCompilableName name
-  sourceFiles <- getSourceFiles fp Nothing . Library.libBuildInfo . CondTree.condTreeData $ tree
+      lib = CondTree.condTreeData tree
+  sourceFiles <- getSourceFiles fp Nothing (Library.exposedModules lib) (Library.libBuildInfo lib)
   pure $ T.Compilable compilableName T.CompilableTypeLibrary (getDependencyNames ignores $ CondTree.condTreeConstraints tree) sourceFiles
 
 -- |Parse an executable to compile.
@@ -79,7 +85,7 @@ getExecutableCompilable :: FilePath -> Set T.DependencyName -> UnqualComponentNa
 getExecutableCompilable fp ignores name tree = do
   let compilableName = T.mkCompilableName name
       mainMay = Just . Executable.modulePath . CondTree.condTreeData $ tree
-  sourceFiles <- getSourceFiles fp mainMay . Executable.buildInfo . CondTree.condTreeData $ tree
+  sourceFiles <- getSourceFiles fp mainMay [] . Executable.buildInfo . CondTree.condTreeData $ tree
   pure $ T.Compilable compilableName T.CompilableTypeExecutable (getDependencyNames ignores $ CondTree.condTreeConstraints tree) sourceFiles
 
 -- |Parse a test to compile.
@@ -90,7 +96,7 @@ getTestCompilable fp ignores name tree = do
         TestSuiteInterface.TestSuiteExeV10 _ exe -> Just exe
         TestSuiteInterface.TestSuiteLibV09 _ _ -> Nothing
         TestSuiteInterface.TestSuiteUnsupported _ -> Nothing
-  sourceFiles <- getSourceFiles fp mainMay . TestSuite.testBuildInfo . CondTree.condTreeData $ tree
+  sourceFiles <- getSourceFiles fp mainMay [] . TestSuite.testBuildInfo . CondTree.condTreeData $ tree
   pure $ T.Compilable compilableName T.CompilableTypeTest (getDependencyNames ignores $ CondTree.condTreeConstraints tree) sourceFiles
 
 -- |Parse a benchmark to compile.
@@ -100,7 +106,7 @@ getBenchmarkCompilable fp ignores name tree = do
       mainMay = case Benchmark.benchmarkInterface $ CondTree.condTreeData tree of
         BenchmarkInterface.BenchmarkExeV10 _ exe -> Just exe
         BenchmarkInterface.BenchmarkUnsupported _ -> Nothing
-  sourceFiles <- getSourceFiles fp mainMay . Benchmark.benchmarkBuildInfo . CondTree.condTreeData $ tree
+  sourceFiles <- getSourceFiles fp mainMay [] . Benchmark.benchmarkBuildInfo . CondTree.condTreeData $ tree
   pure $ T.Compilable compilableName T.CompilableTypeBenchmark (getDependencyNames ignores $ CondTree.condTreeConstraints tree) sourceFiles
 
 -- |Parse a single cabal file.
