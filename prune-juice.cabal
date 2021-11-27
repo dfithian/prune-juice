@@ -1,6 +1,6 @@
 cabal-version:  3.0
 name:           prune-juice
-version:        0.7.1
+version:        0.7.2
 synopsis:       Prune unused Haskell dependencies
 description:    Prune unused Haskell dependencies - see README at <https://github.com/dfithian/prune-juice#readme>
 category:       Development

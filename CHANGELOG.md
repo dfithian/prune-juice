@@ -1,3 +1,7 @@
+## 0.7.2
+
+* Fix a bug with missing `hs-source-dirs` (thanks @LeventErkok!)
+
 ## 0.7.1
 
 * Version bounds for Cabal
