@@ -53,7 +53,11 @@ getSourceFiles :: FilePath -> Maybe FilePath -> BuildInfo -> IO (Set FilePath)
 getSourceFiles fp mainMay buildInfo = do
   let hsSourceDirs = BuildInfo.hsSourceDirs buildInfo
   allFiles <- case null hsSourceDirs of
-    True -> Set.filter (flip elem (takeFileName <$> maybeToList mainMay) . takeFileName) <$> listFilesRecursive fp
+    True ->
+      -- if main is empty, this is a library so we can consider all files.
+      -- FIXME this should really use exposed-modules/other-modules, but it's a shim for now.
+      Set.filter (maybe (const True) (\main -> flip elem [takeFileName main]) mainMay . takeFileName)
+        <$> listFilesRecursive fp
     False -> fmap mconcat . for hsSourceDirs $ \dir -> listFilesRecursive $ fp </> dirToPath dir
   pure $ Set.filter (\fp2 -> any ($ fp2) [isExtensionOf "hs", isExtensionOf "lhs", isExtensionOf "hs-boot"]) allFiles
   where
