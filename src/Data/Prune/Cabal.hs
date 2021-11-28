@@ -23,7 +23,7 @@ import Distribution.Types.Library (Library)
 import Distribution.Types.TestSuite (TestSuite)
 import Distribution.Types.UnqualComponentName (UnqualComponentName)
 import System.Directory (listDirectory)
-import System.FilePath.Posix ((</>), dropExtension, isExtensionOf, takeDirectory, takeFileName)
+import System.FilePath.Posix ((</>), dropExtension, isExtensionOf, takeDirectory)
 import qualified Data.Set as Set
 import qualified Distribution.ModuleName as ModuleName
 import qualified Distribution.Types.Benchmark as Benchmark
@@ -58,13 +58,13 @@ getSourceFiles fp mainMay exposedModules buildInfo = do
       moduleFiles = ModuleName.toFilePath <$> (exposedModules <> BuildInfo.otherModules buildInfo)
       isHaskellFile fp2 = any ($ fp2) [isExtensionOf "hs", isExtensionOf "lhs", isExtensionOf "hs-boot"]
       isModuleFile fp2 = any (\fp3 -> fp3 `isSuffixOf` dropExtension fp2) moduleFiles
+      isMainFile fp2 = case mainMay of
+        Nothing -> False
+        Just main -> main `isSuffixOf` fp2
   allFiles <- case null hsSourceDirs of
-    True ->
-      -- if main is empty, this is a library so we can consider all files.
-      Set.filter (maybe (const True) (\main -> flip elem [takeFileName main]) mainMay . takeFileName)
-        <$> listFilesRecursive fp
+    True -> listFilesRecursive fp
     False -> fmap mconcat . for hsSourceDirs $ \dir -> listFilesRecursive $ fp </> dirToPath dir
-  pure $ Set.filter (\fp2 -> isHaskellFile fp2 && isModuleFile fp2) allFiles
+  pure $ Set.filter (\fp2 -> isHaskellFile fp2 && (isModuleFile fp2 || isMainFile fp2)) allFiles
   where
 #if MIN_VERSION_Cabal(3,6,0)
     dirToPath = UtilsPath.getSymbolicPath

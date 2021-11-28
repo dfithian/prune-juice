@@ -1,0 +1,29 @@
+cabal-version: 3.0
+version: 0.0
+name: example
+
+common options
+  build-depends:
+      base
+
+library
+  import: options
+  exposed-modules:
+      Data.Example.Lib
+
+test-suite test
+  import: options
+  main-is: test/main.hs
+  type: exitcode-stdio-1.0
+  build-depends:
+      example
+  other-modules:
+      Data.Example.Test
+
+executable example
+  import: options
+  main-is: app/main.hs
+  build-depends:
+      example
+  other-modules:
+      Data.Example.Main
