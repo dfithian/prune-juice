@@ -46,12 +46,15 @@ defaultIgnoreList :: Set T.DependencyName
 defaultIgnoreList = Set.fromList
   [ T.DependencyName "base" -- ignore base because it's needed for info modules etc
   , T.DependencyName "hedgehog" -- ignore because some packages use hedgehog discovery
+  , T.DependencyName "hlint" -- ignore because some packages use hlint
   , T.DependencyName "hspec" -- ignore because some packages use hspec discovery
   , T.DependencyName "hspec-discover" -- ignore because some packages use hspec discovery
   , T.DependencyName "tasty" -- ignore because some packages use tasty discovery
+  , T.DependencyName "tasty-golden" -- ignore because some packages use tasty discovery
   , T.DependencyName "tasty-hedgehog" -- ignore because some packages use tasty discovery
   , T.DependencyName "tasty-hspec" -- ignore because some packages use tasty discovery
   , T.DependencyName "tasty-hunit" -- ignore because some packages use tasty discovery
+  , T.DependencyName "tasty-quickcheck" -- ignore because some packages use tasty discovery
   ]
 
 verbosityToLogLevel :: T.Verbosity -> Maybe LogLevel
