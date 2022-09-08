@@ -19,14 +19,15 @@ buildDependsNestedSection = T.BuildDependsNestedSection 2 ["", "    , base <5.0"
 importNestedSection = T.ImportNestedSection 2 [" foo, bar"]
 otherNestedSection = T.OtherNestedSection 2 ["default-language: Haskell2010"]
 
-librarySection, executableSection, commonSection, otherSection :: T.Section
+librarySection, sublibrarySection, executableSection, commonSection, otherSection :: T.Section
 librarySection = T.TargetSection T.CompilableTypeLibrary Nothing [importNestedSection, buildDependsNestedSection, otherNestedSection]
+sublibrarySection = T.TargetSection T.CompilableTypeLibrary (Just (T.CompilableName "baz")) [importNestedSection, buildDependsNestedSection, otherNestedSection]
 executableSection = T.TargetSection T.CompilableTypeExecutable (Just (T.CompilableName "prune-juice")) [buildDependsNestedSection, otherNestedSection]
 commonSection = T.CommonSection (T.CommonName "foo") [buildDependsNestedSection, otherNestedSection]
 otherSection = T.OtherSection ["name: prune-juice"]
 
 buildDependsNestedExample, importNestedExample, otherNestedExample
-  , libraryExample, executableExample, commonExample, otherExample :: String
+  , libraryExample, sublibraryExample, executableExample, commonExample, otherExample :: String
 buildDependsNestedExample = unlines
   [ "  build-depends:"
   , "    , base <5.0"
@@ -58,6 +59,13 @@ commonExample = unlines
   ]
 otherExample = unlines
   [ "name: prune-juice"
+  ]
+sublibraryExample = unlines
+  [ "library baz"
+  , "  import: foo, bar"
+  , "  build-depends:"
+  , "    , base <5.0"
+  , "  default-language: Haskell2010"
   ]
 
 spec :: Spec
@@ -92,6 +100,9 @@ spec = describe "Data.Prune.Section.Parser" $ do
 
   it "should parse a library section" $
     parse section "" libraryExample `shouldBe` Right librarySection
+
+  it "should parse a sublibrary section" $
+    parse section "" sublibraryExample `shouldBe` Right sublibrarySection
 
   it "should parse an executable section" $
     parse section "" executableExample `shouldBe` Right executableSection
