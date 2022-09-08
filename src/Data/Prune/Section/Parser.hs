@@ -9,7 +9,7 @@ import Control.Monad (void)
 import Data.List (isSuffixOf)
 import Data.Text (pack, unpack)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, many, noneOf, parse, some, try)
+import Text.Megaparsec (Parsec, many, noneOf, parse, some, try, errorBundlePretty)
 import Text.Megaparsec.Char (alphaNumChar, char, eol, hspace, hspace1, string)
 
 import qualified Data.Prune.Section.Types as T
@@ -85,7 +85,7 @@ sections = some section
 
 -- |Parse using 'sections'.
 parseCabalSections :: String -> Either String [T.Section]
-parseCabalSections = left show . parse sections ""
+parseCabalSections = left errorBundlePretty . parse sections ""
 
 -- |Render sections. @parseCabalSections . renderCabalSections@ should be equivalent to @Right@.
 renderCabalSections :: [T.Section] -> String
