@@ -36,6 +36,9 @@ parsePkg s = case parseInstalledPackageInfo (encodeUtf8 s) of
     $logError $ "Failed to parse package due to " <> pack (show err) <> "; original input " <> s
     pure Nothing
   Right (_, installedPackageInfo) ->
+    -- https://hackage.haskell.org/package/Cabal-3.8.1.0/docs/Distribution-Simple-LocalBuildInfo.html#t:LibraryName
+    -- In case this is a sublib we want the sublib name not the package name.
+    -- We coul also fech the main lib name, but the package name is probably fine
     let packageName =
           case InstalledPackageInfo.sourceLibName installedPackageInfo of
             LibraryName.LMainLibName -> PackageName.unPackageName . PackageId.pkgName . InstalledPackageInfo.sourcePackageId $ installedPackageInfo
