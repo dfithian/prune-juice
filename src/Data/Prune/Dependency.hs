@@ -24,6 +24,8 @@ import qualified Distribution.ModuleName as ModuleName
 import qualified Distribution.Types.ExposedModule as ExposedModule
 import qualified Distribution.Types.PackageId as PackageId
 import qualified Distribution.Types.PackageName as PackageName
+import qualified Distribution.Types.LibraryName as LibraryName
+import qualified Distribution.Types.UnqualComponentName as UnqualComponentName
 
 import qualified Data.Prune.Types as T
 
@@ -34,7 +36,13 @@ parsePkg s = case parseInstalledPackageInfo (encodeUtf8 s) of
     $logError $ "Failed to parse package due to " <> pack (show err) <> "; original input " <> s
     pure Nothing
   Right (_, installedPackageInfo) ->
-    let packageName = PackageName.unPackageName . PackageId.pkgName . InstalledPackageInfo.sourcePackageId $ installedPackageInfo
+    -- https://hackage.haskell.org/package/Cabal-3.8.1.0/docs/Distribution-Simple-LocalBuildInfo.html#t:LibraryName
+    -- In case this is a sublib we want the sublib name not the package name.
+    -- We coul also fech the main lib name, but the package name is probably fine
+    let packageName =
+          case InstalledPackageInfo.sourceLibName installedPackageInfo of
+            LibraryName.LMainLibName -> PackageName.unPackageName . PackageId.pkgName . InstalledPackageInfo.sourcePackageId $ installedPackageInfo
+            LibraryName.LSubLibName unqualComponentName -> UnqualComponentName.unUnqualComponentName unqualComponentName
         moduleNames = Set.fromList . fmap (T.ModuleName . pack . intercalate "." . ModuleName.components . ExposedModule.exposedName) . InstalledPackageInfo.exposedModules $ installedPackageInfo
     in case null packageName of
       True -> do

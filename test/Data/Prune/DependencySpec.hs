@@ -1,9 +1,11 @@
+
 module Data.Prune.DependencySpec where
 
 import Prelude
 
 import Control.Monad.Logger (runNoLoggingT)
 import Data.FileEmbed (embedFile)
+import Data.Text (splitOn)
 import Data.Text.Encoding (decodeUtf8)
 import System.FilePath.TH (fileRelativeToAbsolute, fileRelativeToAbsoluteStr)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy, xit)
@@ -84,3 +86,16 @@ spec = describe "Data.Prune.Dependency" $ do
     package <- parseCabalFile projectRoot mempty
     thisModule <- runNoLoggingT $ getDependencyByModule thisFile T.Stack [package]
     Set.unions (Map.elems thisModule) `shouldSatisfy` Set.member (T.DependencyName "base")
+
+  it "parses dependencies for the sublist example" $ do
+    let dump = decodeUtf8 $(embedFile =<< fileRelativeToAbsoluteStr "../../fixtures/sublib-pkg.txt")
+        expected = [ Just ( T.DependencyName "prune-juice-fixture"
+                          , Set.singleton (T.ModuleName "MyLib")
+                          )
+                   , Just ( T.DependencyName "prune-juice-fixture-common"
+                          , Set.singleton (T.ModuleName "Common")
+                          )
+
+                   ]
+    pkgs <- runNoLoggingT $ traverse parsePkg . splitOn "\n---\n" $ dump
+    pkgs `shouldBe` expected

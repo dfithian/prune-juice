@@ -9,7 +9,7 @@ import Control.Monad (void)
 import Data.List (isSuffixOf)
 import Data.Text (pack, unpack)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, many, noneOf, parse, some, try)
+import Text.Megaparsec (Parsec, many, noneOf, parse, some, try, errorBundlePretty, optional)
 import Text.Megaparsec.Char (alphaNumChar, char, eol, hspace, hspace1, string)
 
 import qualified Data.Prune.Section.Types as T
@@ -58,9 +58,9 @@ section :: Parser T.Section
 section =
   let lib = do
         void $ string "library"
-        hspace
+        mname <- optional (hspace1 >> targetName)
         void eol
-        T.TargetSection T.CompilableTypeLibrary Nothing <$> nestedSections
+        T.TargetSection T.CompilableTypeLibrary mname <$> nestedSections
       target typ typName = do
         void $ string typName
         hspace1
@@ -73,19 +73,18 @@ section =
         hspace1
         name <- T.CommonName . pack <$> restOfLine
         T.CommonSection name <$> nestedSections
-      sublib = target T.CompilableTypeLibrary "library"
       exe = target T.CompilableTypeExecutable "executable"
       test = target T.CompilableTypeTest "test-suite"
       bench = target T.CompilableTypeBenchmark "benchmark"
       other = T.OtherSection <$> indentedLines 0
-  in lib <|> sublib <|> exe <|> test <|> bench <|> common <|> other
+  in lib <|> exe <|> test <|> bench <|> common <|> other
 
 sections :: Parser [T.Section]
 sections = some section
 
 -- |Parse using 'sections'.
 parseCabalSections :: String -> Either String [T.Section]
-parseCabalSections = left show . parse sections ""
+parseCabalSections = left errorBundlePretty . parse sections ""
 
 -- |Render sections. @parseCabalSections . renderCabalSections@ should be equivalent to @Right@.
 renderCabalSections :: [T.Section] -> String

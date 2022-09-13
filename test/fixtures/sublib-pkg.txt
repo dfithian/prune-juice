@@ -1,0 +1,67 @@
+name:                 prune-juice-fixture
+version:              0.1.0.0
+visibility:           public
+id:                   prune-juice-fixture-0.1.0.0-inplace
+key:                  prune-juice-fixture-0.1.0.0-inplace
+maintainer:           dbalseiro@stackbuilders.com
+author:               Diego Balseiro
+abi:                  inplace
+exposed:              True
+exposed-modules:      MyLib
+import-dirs:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/build
+
+library-dirs:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/build
+
+dynamic-library-dirs:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/build
+
+data-dir:             /home/dbalseiro/code/prune-juice-fixture/.
+hs-libraries:         HSprune-juice-fixture-0.1.0.0-inplace
+depends:
+    base-4.14.3.0
+    prune-juice-fixture-0.1.0.0-inplace-prune-juice-fixture-common
+
+haddock-interfaces:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/doc/html/prune-juice-fixture/prune-juice-fixture.haddock
+
+haddock-html:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/doc/html/prune-juice-fixture
+pkgroot: "/home/dbalseiro/code/prune-juice-fixture/dist-newstyle/packagedb"
+---
+name:                 z-prune-juice-fixture-z-prune-juice-fixture-common
+version:              0.1.0.0
+package-name:         prune-juice-fixture
+lib-name:             prune-juice-fixture-common
+id:
+    prune-juice-fixture-0.1.0.0-inplace-prune-juice-fixture-common
+
+key:
+    prune-juice-fixture-0.1.0.0-inplace-prune-juice-fixture-common
+
+maintainer:           dbalseiro@stackbuilders.com
+author:               Diego Balseiro
+abi:                  inplace
+exposed-modules:      Common
+import-dirs:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/l/prune-juice-fixture-common/build/prune-juice-fixture-common
+
+library-dirs:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/l/prune-juice-fixture-common/build/prune-juice-fixture-common
+
+dynamic-library-dirs:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/l/prune-juice-fixture-common/build/prune-juice-fixture-common
+
+data-dir:             /home/dbalseiro/code/prune-juice-fixture/.
+hs-libraries:
+    HSprune-juice-fixture-0.1.0.0-inplace-prune-juice-fixture-common
+
+depends:              base-4.14.3.0
+haddock-interfaces:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/l/prune-juice-fixture-common/doc/html/prune-juice-fixture/prune-juice-fixture.haddock
+
+haddock-html:
+    /home/dbalseiro/code/prune-juice-fixture/dist-newstyle/build/x86_64-linux/ghc-8.10.7/prune-juice-fixture-0.1.0.0/l/prune-juice-fixture-common/doc/html/prune-juice-fixture
+pkgroot: "/home/dbalseiro/code/prune-juice-fixture/dist-newstyle/packagedb"
+
