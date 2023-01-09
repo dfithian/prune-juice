@@ -13,7 +13,11 @@ import Data.Set (Set)
 import Data.Text (Text, pack)
 import Data.Traversable (for)
 import Distribution.ModuleName (ModuleName)
+#if MIN_VERSION_Cabal(3,8,0)
+import Distribution.Simple.PackageDescription (readGenericPackageDescription)
+#else
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
+#endif
 import Distribution.Types.Benchmark (Benchmark)
 import Distribution.Types.BuildInfo (BuildInfo)
 import Distribution.Types.CondTree (CondTree)

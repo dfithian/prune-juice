@@ -68,7 +68,7 @@ common options
       TypeOperators
       ViewPatterns
   build-depends:
-      Cabal >= 3.2 && < 3.7
+      Cabal >= 3.2 && < 3.9
     , aeson
     , base
     , bytestring
