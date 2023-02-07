@@ -1,3 +1,5 @@
+> :warning: **Unmaintained. Use `-Wunused-packages` instead.**
+
 # Prune Juice
 
 ![Build Status](https://github.com/dfithian/prune-juice/actions/workflows/workflow.yml/badge.svg)
