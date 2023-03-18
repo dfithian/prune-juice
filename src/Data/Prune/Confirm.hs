@@ -5,7 +5,7 @@ import Prelude
 
 import Data.Char (toLower)
 import Data.Text (pack, unpack)
-import qualified Data.Text.ANSI as Text.ANSI
+import qualified Text.ANSI
 
 err, warn, bold :: String -> String
 err = unpack . Text.ANSI.bold . Text.ANSI.red . pack

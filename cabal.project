@@ -1,2 +1,0 @@
-packages: ./*.cabal
-constraints: cabal-install-parsers == 0.4
